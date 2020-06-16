@@ -44,11 +44,19 @@ void EnsureCreated()
         FOREIGN KEY (AccountId) REFERENCES Accounts (AccountId) ON DELETE CASCADE,
         FOREIGN KEY (DialogId) REFERENCES Dialogs (DialogId) ON DELETE CASCADE
     );
+
+    EXEC SQL CREATE TABLE Locks
+    (
+        Name text PRIMARY KEY,
+        IsLocked boolean NOT NULL
+    );
+
     EXEC SQL COMMIT;
 }
 
 void Drop()
 {
+    EXEC SQL DROP TABLE IF EXISTS Locks;
     EXEC SQL DROP TABLE IF EXISTS AccountsDialogs;
     EXEC SQL DROP TABLE IF EXISTS Messages;
     EXEC SQL DROP TABLE IF EXISTS Dialogs;
@@ -123,6 +131,41 @@ bool Login(char* login, char* password)
     return res;
 }
 
+void Lock(char* lockname)
+{
+    EXEC SQL BEGIN DECLARE SECTION;
+    char* lockname_ = lockname;
+    EXEC SQL END DECLARE SECTION;
+
+    EXEC SQL INSERT INTO Locks (Name) VALUES (:lockname_);
+    EXEC SQL COMMIT;
+
+    EXEC SQL SELECT * FROM Locks WHERE Name = :lockname_ FOR UPDATE;
+    EXEC SQL PREPARE TRANSACTION 'qwerty';
+    EXEC SQL COMMIT;
+}
+
+void Wait(char* lockname)
+{
+    EXEC SQL BEGIN DECLARE SECTION;
+    char* lockname_ = lockname;
+    EXEC SQL END DECLARE SECTION;
+
+    EXEC SQL SELECT * FROM Locks WHERE Name = :lockname_ FOR UPDATE;
+    EXEC SQL COMMIT;
+}
+
+void Unlock(char* lockname)
+{
+    EXEC SQL BEGIN DECLARE SECTION;
+    char* lockname_ = lockname;
+    EXEC SQL END DECLARE SECTION;
+
+    EXEC SQL COMMIT;
+    EXEC SQL COMMIT PREPARED 'qwerty';
+    EXEC SQL COMMIT;
+}
+
 int main(int argc, char** argv)
 {
     EXEC SQL WHENEVER NOT FOUND CONTINUE;
@@ -139,26 +182,49 @@ int main(int argc, char** argv)
     EXEC SQL END DECLARE SECTION;
 
     EXEC SQL CONNECT TO :target AS :connection USER :user IDENTIFIED BY :password;
-    EXEC SQL CONNECT TO :target1 AS :connection1 USER :user IDENTIFIED BY :password1;
+    //EXEC SQL CONNECT TO :target1 AS :connection1 USER :user IDENTIFIED BY :password1;
 
     EXEC SQL AT :connection SELECT version() INTO :ver;
     printf("version: %s\n", ver);
 
-    EXEC SQL AT :connection1 SELECT version() INTO :ver;
-    printf("version: %s\n", ver);
+    //EXEC SQL AT :connection1 SELECT version() INTO :ver;
+    //printf("version: %s\n", ver);
 
     EXEC SQL SET CONNECTION :connection;
 
-    //Drop();
-    //return 0;
+    int a;
+    scanf("%d", &a);
+    printf("%d", a);
 
-    //EnsureCreated();
-    //Alter();
-    AddVal(23131);
-    SelectPrint();
+    if (a == 0)
+    {
+        EnsureCreated();
+    }
+    if (a == 1)
+    {
+        Drop();
+    }
+    if (a == 2)
+    {
+        NewUser("Vladislav213", "123456");
+    }
+    if (a == 3)
+    {
+        Login("Vladislav213", "1234516");
+    }
+    if (a == 10)
+    {
+        Lock("qwerty");
+    }
+    if (a == 11)
+    {
+        Wait("qwerty");
+    }
+    if (a == 12)
+    {
+        Unlock("qwerty");
+    }
 
-    NewUser("Vladislav213", "123456");
-    Login("Vladislav213", "1234516");
 
     return 0;
 }

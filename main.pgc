@@ -1,8 +1,59 @@
 #include <stdio.h>
+#include <pgtypes.h>
+#include <stdbool.h>
+
+EXEC SQL WHENEVER SQLWARNING SQLPRINT;
+EXEC SQL WHENEVER SQLERROR SQLPRINT;
 
 void EnsureCreated()
 {
     EXEC SQL CREATE TABLE table1 (id serial);
+
+    EXEC SQL CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
+    EXEC SQL CREATE TABLE Accounts
+    (
+        AccountId            serial PRIMARY KEY,
+        Nickname             text      NOT NULL UNIQUE,
+        RegistrationDateTime timestamp NOT NULL DEFAULT current_timestamp,
+        LoginDateTime        timestamp,
+        PasswordHash         text      NOT NULL
+    );
+
+    EXEC SQL CREATE TABLE Dialogs
+    (
+        DialogId serial PRIMARY KEY
+    );
+
+    EXEC SQL CREATE TABLE Messages
+    (
+        MessageId    serial PRIMARY KEY,
+        Text         text      NOT NULL,
+        SendDateTime timestamp NOT NULL DEFAULT current_timestamp,
+        DialogId     int       NOT NULL,
+        AuthorId     int       NOT NULL,
+        FOREIGN KEY (DialogId) REFERENCES Dialogs (DialogId) ON DELETE CASCADE,
+        FOREIGN KEY (AuthorId) REFERENCES Accounts (AccountId) ON DELETE CASCADE
+    );
+
+    EXEC SQL CREATE TABLE AccountsDialogs
+    (
+        AccountId int NOT NULL,
+        DialogId  int NOT NULL,
+        PRIMARY KEY (AccountId, DialogId),
+        FOREIGN KEY (AccountId) REFERENCES Accounts (AccountId) ON DELETE CASCADE,
+        FOREIGN KEY (DialogId) REFERENCES Dialogs (DialogId) ON DELETE CASCADE
+    );
+    EXEC SQL COMMIT;
+}
+
+void Drop()
+{
+    EXEC SQL DROP TABLE IF EXISTS AccountsDialogs;
+    EXEC SQL DROP TABLE IF EXISTS Messages;
+    EXEC SQL DROP TABLE IF EXISTS Dialogs;
+    EXEC SQL DROP TABLE IF EXISTS Accounts;
+    EXEC SQL DROP TABLE IF EXISTS table1;
     EXEC SQL COMMIT;
 }
 
@@ -37,14 +88,43 @@ void SelectPrint()
         EXEC SQL FETCH cursor1 INTO :id, :value;
         printf("%d %d\n", id, value);
     }
+    EXEC SQL WHENEVER NOT FOUND CONTINUE;
     EXEC SQL CLOSE cursor1;
     EXEC SQL COMMIT;
 }
 
+void NewUser(char* login, char* password)
+{
+    EXEC SQL BEGIN DECLARE SECTION;
+    char* login_ = login;
+    char* password_ = password;
+    EXEC SQL END DECLARE SECTION;
+
+    EXEC SQL INSERT INTO Accounts (Nickname, PasswordHash) VALUES (:login_, crypt(:password_, gen_salt('md5')));
+    EXEC SQL COMMIT;
+}
+
+bool Login(char* login, char* password)
+{
+    EXEC SQL BEGIN DECLARE SECTION;
+    char* login_ = login;
+    char* password_ = password;
+    bool res = false;
+    EXEC SQL END DECLARE SECTION;
+
+    EXEC SQL SELECT (PasswordHash = crypt(:password_, PasswordHash)) INTO :res FROM Accounts WHERE Nickname = :login_;
+
+    if (res)
+    {
+        EXEC SQL UPDATE Accounts SET LoginDateTime = current_timestamp WHERE Nickname = :login_;
+    }
+
+    EXEC SQL COMMIT;
+    return res;
+}
+
 int main(int argc, char** argv)
 {
-    EXEC SQL WHENEVER SQLWARNING SQLPRINT;
-    EXEC SQL WHENEVER SQLERROR STOP;
     EXEC SQL WHENEVER NOT FOUND CONTINUE;
 
     EXEC SQL BEGIN DECLARE SECTION;
@@ -69,10 +149,16 @@ int main(int argc, char** argv)
 
     EXEC SQL SET CONNECTION :connection;
 
+    //Drop();
+    //return 0;
+
     //EnsureCreated();
     //Alter();
     AddVal(23131);
     SelectPrint();
+
+    NewUser("Vladislav213", "123456");
+    Login("Vladislav213", "1234516");
 
     return 0;
 }

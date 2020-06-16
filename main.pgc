@@ -1,6 +1,10 @@
 #include <stdio.h>
-#include <pgtypes.h>
 #include <stdbool.h>
+
+#include <pgtypes.h>
+#include <ecpglib.h>
+#include <ecpgerrno.h>
+#include <sqlca.h>
 
 EXEC SQL WHENEVER SQLWARNING SQLPRINT;
 EXEC SQL WHENEVER SQLERROR SQLPRINT;
@@ -137,11 +141,18 @@ void Lock(char* lockname)
     char* lockname_ = lockname;
     EXEC SQL END DECLARE SECTION;
 
-    EXEC SQL INSERT INTO Locks (Name) VALUES (:lockname_);
+    EXEC SQL INSERT INTO Locks (Name, IsLocked) VALUES (:lockname_, true);
     EXEC SQL COMMIT;
 
     EXEC SQL SELECT * FROM Locks WHERE Name = :lockname_ FOR UPDATE;
-    EXEC SQL PREPARE TRANSACTION 'qwerty';
+
+    //EXEC SQL PREPARE TRANSACTION 'qwerty';
+
+    char transaction[256] = "prepare transaction '";
+    strcat(transaction, lockname_);
+    strcat(transaction, "'");
+    ECPGtrans(__LINE__, NULL, transaction);
+
     EXEC SQL COMMIT;
 }
 
@@ -162,7 +173,18 @@ void Unlock(char* lockname)
     EXEC SQL END DECLARE SECTION;
 
     EXEC SQL COMMIT;
-    EXEC SQL COMMIT PREPARED 'qwerty';
+    //EXEC SQL COMMIT PREPARED 'qwerty2';
+
+    char transaction[256] = "commit prepared '";
+    strcat(transaction, lockname_);
+    strcat(transaction, "'");
+    printf("\n\n%s", transaction);
+    ECPGtrans(__LINE__, NULL, transaction);
+
+    EXEC SQL COMMIT;
+
+    EXEC SQL UPDATE Locks SET IsLocked = false WHERE Name = :lockname_;
+
     EXEC SQL COMMIT;
 }
 
@@ -214,15 +236,27 @@ int main(int argc, char** argv)
     }
     if (a == 10)
     {
-        Lock("qwerty");
+        Lock("qwerty5");
     }
     if (a == 11)
     {
-        Wait("qwerty");
+        Wait("qwerty5");
     }
     if (a == 12)
     {
-        Unlock("qwerty");
+        Unlock("qwerty5");
+    }
+    if (a == 20)
+    {
+        Lock("qwerty3");
+    }
+    if (a == 21)
+    {
+        Wait("qwerty3");
+    }
+    if (a == 22)
+    {
+        Unlock("qwerty3");
     }
 
 

@@ -1,0 +1,78 @@
+#include <stdio.h>
+
+void EnsureCreated()
+{
+    EXEC SQL CREATE TABLE table1 (id serial);
+    EXEC SQL COMMIT;
+}
+
+void Alter()
+{
+    EXEC SQL ALTER TABLE table1 ADD value int NOT NULL;
+    EXEC SQL COMMIT;
+}
+
+void AddVal(int val)
+{
+    EXEC SQL BEGIN DECLARE SECTION;
+    int val1 = val;
+    EXEC SQL END DECLARE SECTION;
+    EXEC SQL INSERT INTO table1 (value) VALUES (:val1);
+    EXEC SQL COMMIT;
+}
+
+void SelectPrint()
+{
+    EXEC SQL BEGIN DECLARE SECTION;
+    int id = 0;
+    int value = 0;
+    EXEC SQL END DECLARE SECTION;
+    EXEC SQL DECLARE cursor1 CURSOR FOR
+        SELECT * FROM table1
+        ORDER BY id;
+    EXEC SQL OPEN cursor1;
+    EXEC SQL WHENEVER NOT FOUND DO BREAK;
+    while (1)
+    {
+        EXEC SQL FETCH cursor1 INTO :id, :value;
+        printf("%d %d\n", id, value);
+    }
+    EXEC SQL CLOSE cursor1;
+    EXEC SQL COMMIT;
+}
+
+int main(int argc, char** argv)
+{
+    EXEC SQL WHENEVER SQLWARNING SQLPRINT;
+    EXEC SQL WHENEVER SQLERROR STOP;
+    EXEC SQL WHENEVER NOT FOUND CONTINUE;
+
+    EXEC SQL BEGIN DECLARE SECTION;
+    char *target = "tcp:postgresql://localhost:5432/demo";
+    char *target1 = "tcp:postgresql://192.168.66.1:5432/demo";
+    char *user = "postgres";
+    char *password = "qwerty123";
+    char *password1 = "zasxcd123";
+    char *connection = "connection";
+    char *connection1 = "connection1";
+    char ver[256];
+    EXEC SQL END DECLARE SECTION;
+
+    EXEC SQL CONNECT TO :target AS :connection USER :user IDENTIFIED BY :password;
+    EXEC SQL CONNECT TO :target1 AS :connection1 USER :user IDENTIFIED BY :password1;
+
+    EXEC SQL AT :connection SELECT version() INTO :ver;
+    printf("version: %s\n", ver);
+
+    EXEC SQL AT :connection1 SELECT version() INTO :ver;
+    printf("version: %s\n", ver);
+
+    EXEC SQL SET CONNECTION :connection;
+
+    //EnsureCreated();
+    //Alter();
+    AddVal(23131);
+    SelectPrint();
+
+    return 0;
+}

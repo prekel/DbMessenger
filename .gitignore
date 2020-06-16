@@ -226,7 +226,6 @@ StyleCopReport.xml
 *.meta
 *.iobj
 *.ipdb
-*.pgc
 *.pgd
 *.rsp
 *.sbr

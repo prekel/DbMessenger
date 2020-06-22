@@ -146,8 +146,7 @@ void Lock(char* lockname)
 
     EXEC SQL SELECT * FROM Locks WHERE Name = :lockname_ FOR UPDATE;
 
-    //EXEC SQL PREPARE TRANSACTION 'qwerty';
-
+    //EXEC SQL PREPARE TRANSACTION :lockname_;
     char transaction[256] = "prepare transaction '";
     strcat(transaction, lockname_);
     strcat(transaction, "'");
@@ -173,8 +172,8 @@ void Unlock(char* lockname)
     EXEC SQL END DECLARE SECTION;
 
     EXEC SQL COMMIT;
-    //EXEC SQL COMMIT PREPARED 'qwerty2';
 
+    //EXEC SQL COMMIT PREPARED :lockname_;
     char transaction[256] = "commit prepared '";
     strcat(transaction, lockname_);
     strcat(transaction, "'");
@@ -186,6 +185,16 @@ void Unlock(char* lockname)
     EXEC SQL UPDATE Locks SET IsLocked = false WHERE Name = :lockname_;
 
     EXEC SQL COMMIT;
+}
+
+void SendMessage(int authorId, int dialogId, char* message)
+{
+
+}
+
+void ReceiveMessage(int dialogId)
+{
+
 }
 
 int main(int argc, char** argv)

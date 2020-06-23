@@ -360,7 +360,7 @@ int main(int argc, char** argv)
     char ver[256];
     EXEC SQL END DECLARE SECTION;
 
-    EXEC SQL CONNECT TO :target AS :connection USER :user IDENTIFIED BY :password;
+    EXEC SQL CONNECT TO :target1 AS :connection USER :user IDENTIFIED BY :password1;
     //EXEC SQL CONNECT TO :target1 AS :connection1 USER :user IDENTIFIED BY :password1;
 
     EXEC SQL AT :connection SELECT version() INTO :ver;
@@ -385,6 +385,10 @@ int main(int argc, char** argv)
     if (a == 2)
     {
         Register("Vladislav213", "123456");
+    }
+    if (a == 2123)
+    {
+        Register("qwerty", "123456");
     }
     if (a == 3)
     {
@@ -438,7 +442,7 @@ int main(int argc, char** argv)
         char name1[1000];
         char name2[1000];
 
-        GetDialogTwoMembers(5, name1, name2);
+        GetDialogTwoMembers(1, name1, name2);
 
         printf("%s %s ", name1, name2);
     }

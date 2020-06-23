@@ -344,10 +344,33 @@ void SendMessage(int authorId, int dialogId, char* message)
 
 int InputLine(char* stringToInput, int maxStringLength)
 {
-    fgets(stringToInput, maxStringLength, stdin);
-    int stringLength = strlen(stringToInput);
-    stringToInput[stringLength - 1] = '\0';
-    return stringLength - 1;
+    unsigned long stringLength = 0;
+    bool isError = false;
+    while (true)
+    {
+        char* fgetsReturn = fgets(stringToInput, maxStringLength, stdin);
+        if (fgetsReturn == NULL)
+        {
+            return -2;
+        }
+
+        stringLength = strlen(stringToInput);
+
+        if (stringToInput[stringLength - 1] != '\n')
+        {
+            isError = true;
+        }
+        else
+        {
+            break;
+        }
+    }
+    if (!isError)
+    {
+        stringToInput[stringLength - 1] = '\0';
+        return (int) stringLength - 1;
+    }
+    return -1;
 }
 
 void StartSendingMessages(int authorId, int dialogId)
@@ -357,9 +380,9 @@ void StartSendingMessages(int authorId, int dialogId)
         printf(" > ");
         fflush(stdout);
         char msg[1000];
-        if (InputLine(msg, 1000) == 0)
+        while (InputLine(msg, 1000) <= 0)
         {
-            continue;
+
         }
         SendMessage(authorId, dialogId, msg);
     }
@@ -370,6 +393,7 @@ void OutputMessage(char* author, char* message, timestamp time)
     char* timestr = PGTYPEStimestamp_to_asc(time);
 
     printf("%-26s %15s: %s\n", timestr, author, message);
+    fflush(stdout);
 
     PGTYPESchar_free(timestr);
 }
@@ -400,6 +424,7 @@ void GetPrintMessages(int dialogId, int lastMessages)
     {
         EXEC SQL SELECT count(*) INTO :count FROM Messages WHERE DialogId = :dialogId_;
         offset = count - lastMessages;
+        offset = offset < 0 ? 0 : offset;
     }
 
     EXEC SQL DECLARE cursor5 CURSOR FOR
@@ -492,6 +517,25 @@ void CreateLocksTrigger()
     EXEC SQL COMMIT;
 }
 
+int Connect(char* address, char* port, char* dbname, char* dbUser, char* dbUserPassword)
+{
+    EXEC SQL BEGIN DECLARE SECTION;
+    char target[256] = "";
+    char *user_ = dbUser;
+    char *password_ = dbUserPassword;
+    char *connection = "connection";
+    EXEC SQL END DECLARE SECTION;
+
+    strcat(target, "tcp:postgresql://");
+    strcat(target, address);
+    strcat(target, ":");
+    strcat(target, port);
+    strcat(target, "/");
+    strcat(target, dbname);
+
+    EXEC SQL CONNECT TO :target AS :connection USER :user_ IDENTIFIED BY :password_;
+}
+
 int main(int argc, char** argv)
 {
     srand(time(NULL));
@@ -509,7 +553,7 @@ int main(int argc, char** argv)
     char ver[256];
     EXEC SQL END DECLARE SECTION;
 
-    EXEC SQL CONNECT TO :target1 AS :connection USER :user IDENTIFIED BY :password1;
+    EXEC SQL CONNECT TO :target AS :connection USER :user IDENTIFIED BY :password;
     //EXEC SQL CONNECT TO :target1 AS :connection1 USER :user IDENTIFIED BY :password1;
 
     EXEC SQL AT :connection SELECT version() INTO :ver;
@@ -521,8 +565,19 @@ int main(int argc, char** argv)
     EXEC SQL SET CONNECTION :connection;
 
     int a;
-    scanf("%d\n", &a);
+    scanf("%d", &a);
 
+    if (a == -2)
+    {
+        printf("Введите IP сервера базы данных [localhost]: ");
+        printf("Введите порт сервера базы данных [5432]: ");
+        printf("Введите название базы данных [dbmessenger]: ");
+        printf("Введите пользователя базы данных [postgres]: ");
+        printf("Введите пароль пользователя базы данных [qwerty123]: ");
+        printf("Введите логин [User1]: ");
+        printf("Введите пароль [qwerty]: ");
+
+    }
     if (a == -1)
     {
         EnsureCreated();

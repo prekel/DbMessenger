@@ -1,7 +1,7 @@
 ECPG = ecpg
 CC = gcc
 
-CFLAGS = -O0 -Wall -std=gnu99
+CFLAGS = -O0 -Wall -std=gnu11
 LDFLAGS = -L$(shell pg_config --libdir) -lecpg -lpgtypes
 INC = -I.. -I$(shell pg_config --includedir)
 

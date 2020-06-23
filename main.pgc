@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdbool.h>
+#include <malloc.h>
 
 #include <pgtypes.h>
 #include <ecpglib.h>
@@ -8,6 +9,8 @@
 
 EXEC SQL WHENEVER SQLWARNING SQLPRINT;
 EXEC SQL WHENEVER SQLERROR SQLPRINT;
+
+void CreateLocksTrigger();
 
 void EnsureCreated()
 {
@@ -55,23 +58,27 @@ void EnsureCreated()
         IsLocked boolean NOT NULL
     );
 
+    CreateLocksTrigger();
+
     EXEC SQL COMMIT;
 }
 
 void Drop()
 {
-    EXEC SQL DROP TABLE IF EXISTS Locks;
-    EXEC SQL DROP TABLE IF EXISTS AccountsDialogs;
-    EXEC SQL DROP TABLE IF EXISTS Messages;
-    EXEC SQL DROP TABLE IF EXISTS Dialogs;
-    EXEC SQL DROP TABLE IF EXISTS Accounts;
-    EXEC SQL DROP TABLE IF EXISTS table1;
+    EXEC SQL DROP TABLE IF EXISTS Locks CASCADE;
+    EXEC SQL DROP TABLE IF EXISTS AccountsDialogs CASCADE;
+    EXEC SQL DROP TABLE IF EXISTS Messages CASCADE;
+    EXEC SQL DROP TABLE IF EXISTS Dialogs CASCADE;
+    EXEC SQL DROP TABLE IF EXISTS Accounts CASCADE;
+    EXEC SQL DROP TABLE IF EXISTS table1 CASCADE;
+
     EXEC SQL COMMIT;
 }
 
 void Alter()
 {
     EXEC SQL ALTER TABLE table1 ADD value int NOT NULL;
+
     EXEC SQL COMMIT;
 }
 
@@ -81,6 +88,7 @@ void AddVal(int val)
     int val1 = val;
     EXEC SQL END DECLARE SECTION;
     EXEC SQL INSERT INTO table1 (value) VALUES (:val1);
+
     EXEC SQL COMMIT;
 }
 
@@ -102,10 +110,11 @@ void SelectPrint()
     }
     EXEC SQL WHENEVER NOT FOUND CONTINUE;
     EXEC SQL CLOSE cursor1;
+
     EXEC SQL COMMIT;
 }
 
-void NewUser(char* login, char* password)
+void Register(char* login, char* password)
 {
     EXEC SQL BEGIN DECLARE SECTION;
     char* login_ = login;
@@ -113,6 +122,7 @@ void NewUser(char* login, char* password)
     EXEC SQL END DECLARE SECTION;
 
     EXEC SQL INSERT INTO Accounts (Nickname, PasswordHash) VALUES (:login_, crypt(:password_, gen_salt('md5')));
+
     EXEC SQL COMMIT;
 }
 
@@ -162,6 +172,7 @@ void Wait(char* lockname)
     EXEC SQL END DECLARE SECTION;
 
     EXEC SQL SELECT * FROM Locks WHERE Name = :lockname_ FOR UPDATE;
+
     EXEC SQL COMMIT;
 }
 
@@ -187,6 +198,90 @@ void Unlock(char* lockname)
     EXEC SQL COMMIT;
 }
 
+int CreateDialog(char* name1, char* name2)
+{
+    EXEC SQL BEGIN DECLARE SECTION;
+    char* name1_ = name1;
+    char* name2_ = name2;
+    int dialogId = -1;
+    int user1Id = -1;
+    int user2Id = -1;
+    EXEC SQL END DECLARE SECTION;
+
+    EXEC SQL INSERT INTO Dialogs (DialogId) VALUES (DEFAULT) RETURNING dialogid INTO :dialogId;
+
+    EXEC SQL SELECT AccountId INTO :user1Id FROM Accounts WHERE nickname = :name1_;
+    EXEC SQL SELECT AccountId INTO :user2Id FROM Accounts WHERE nickname = :name2_;
+
+    EXEC SQL INSERT INTO AccountsDialogs (AccountId, DialogId) VALUES (:user1Id, :dialogId);
+    EXEC SQL INSERT INTO AccountsDialogs (AccountId, DialogId) VALUES (:user2Id, :dialogId);
+
+    EXEC SQL COMMIT;
+    return dialogId;
+}
+
+int GetDialogsCount(char* nickname)
+{
+    EXEC SQL BEGIN DECLARE SECTION;
+    char* nickname_ = nickname;
+    int userId = -1;
+    int count = -1;
+    EXEC SQL END DECLARE SECTION;
+
+    EXEC SQL SELECT AccountId INTO :userId FROM Accounts WHERE nickname = :nickname_;
+    EXEC SQL SELECT count(*) INTO :count FROM AccountsDialogs WHERE AccountId = :userId;
+
+    return count;
+}
+
+void GetDialogs(char* nickname, int* outArray)
+{
+    EXEC SQL BEGIN DECLARE SECTION;
+    char* nickname_ = nickname;
+    int userId = -1;
+    int id;
+    EXEC SQL END DECLARE SECTION;
+
+    EXEC SQL SELECT AccountId INTO :userId FROM Accounts WHERE nickname = :nickname_;
+
+    EXEC SQL DECLARE cursor2 CURSOR FOR
+        SELECT DialogId FROM AccountsDialogs WHERE AccountId = :userId ORDER BY DialogId;
+    EXEC SQL OPEN cursor2;
+    EXEC SQL WHENEVER NOT FOUND DO BREAK;
+    while (1)
+    {
+        EXEC SQL FETCH cursor2 INTO :id;
+        *outArray = id;
+        outArray++;
+    }
+    EXEC SQL WHENEVER NOT FOUND CONTINUE;
+    EXEC SQL CLOSE cursor2;
+
+    EXEC SQL COMMIT;
+}
+
+void GetDialogTwoMembers(int dialogId, char* outName1, char* outName2)
+{
+    EXEC SQL BEGIN DECLARE SECTION;
+    int dialogId_ = dialogId;
+    char* outName1_ = outName1;
+    char* outName2_ = outName2;
+    EXEC SQL END DECLARE SECTION;
+
+    EXEC SQL DECLARE cursor3 CURSOR FOR
+        SELECT Nickname
+        FROM Accounts
+            JOIN AccountsDialogs ON Accounts.AccountId = AccountsDialogs.AccountId
+        WHERE DialogId = :dialogId_
+        ORDER BY Accounts.AccountId;
+    EXEC SQL OPEN cursor3;
+    EXEC SQL FETCH cursor3 INTO :outName1_;
+    EXEC SQL FETCH cursor3 INTO :outName2_;
+    EXEC SQL CLOSE cursor3;
+
+    EXEC SQL COMMIT;
+}
+
 void SendMessage(int authorId, int dialogId, char* message)
 {
 
@@ -195,6 +290,36 @@ void SendMessage(int authorId, int dialogId, char* message)
 void ReceiveMessage(int dialogId)
 {
 
+}
+
+void StartReceivingMessages(int dialogId)
+{
+    EXEC SQL BEGIN DECLARE SECTION;
+    int dialogId_ = dialogId;
+    EXEC SQL END DECLARE SECTION;
+
+
+}
+
+void CreateLocksTrigger()
+{
+    EXEC SQL DROP FUNCTION IF EXISTS clear_old_locks CASCADE;
+    EXEC SQL CREATE OR REPLACE FUNCTION clear_old_locks() RETURNS trigger AS
+    $$
+    BEGIN
+        DELETE FROM locks WHERE isLocked = false;
+        RETURN NULL;
+    END;
+    $$ LANGUAGE plpgsql;
+
+
+    EXEC SQL CREATE TRIGGER clear_old_locks
+        BEFORE INSERT
+        ON locks
+        FOR STATEMENT
+    EXECUTE PROCEDURE clear_old_locks();
+
+    EXEC SQL COMMIT;
 }
 
 int main(int argc, char** argv)
@@ -237,7 +362,7 @@ int main(int argc, char** argv)
     }
     if (a == 2)
     {
-        NewUser("Vladislav213", "123456");
+        Register("Vladislav213", "123456");
     }
     if (a == 3)
     {
@@ -267,7 +392,34 @@ int main(int argc, char** argv)
     {
         Unlock("qwerty3");
     }
+    if (a == 30)
+    {
+        CreateLocksTrigger();
+    }
+    if (a == 40)
+    {
+        CreateDialog("Vladislav213", "qwerty");
+    }
+    if (a == 50)
+    {
+        int c = GetDialogsCount("Vladislav213");
+        int* a = (int*) malloc(c * sizeof(int));
+        GetDialogs("Vladislav213", a);
+        for (int i = 0; i < c; i++)
+        {
+            printf("%d ", a[i]);
+        }
+        free(a);
+    }
+    if (a == 60)
+    {
+        char name1[1000];
+        char name2[1000];
 
+        GetDialogTwoMembers(5, name1, name2);
+
+        printf("%s %s ", name1, name2);
+    }
 
     return 0;
 }

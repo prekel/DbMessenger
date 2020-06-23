@@ -3,6 +3,7 @@
 #include <malloc.h>
 
 #include <pgtypes.h>
+#include <pgtypes_timestamp.h>
 #include <ecpglib.h>
 #include <ecpgerrno.h>
 #include <sqlca.h>
@@ -294,11 +295,33 @@ void ReceiveMessage(int dialogId)
 
 void StartReceivingMessages(int dialogId)
 {
+//    EXEC SQL BEGIN DECLARE SECTION;
+//    int dialogId_ = dialogId;
+//    char name1[100];
+//    char name2[100];
+//    EXEC SQL END DECLARE SECTION;
+//
+//    printf("Диалог №%d", dialogId_);
+//
+//    ReceiveMessage(dialogId_);
+//
+
+}
+
+void OutputMessage(char* author, char* message, timestamp time)
+{
     EXEC SQL BEGIN DECLARE SECTION;
-    int dialogId_ = dialogId;
+    char* author_ = author;
+    char* message_ = message;
+    timestamp time_ = time;
     EXEC SQL END DECLARE SECTION;
 
 
+    char* timestr = PGTYPEStimestamp_to_asc(time);
+
+    printf("%s %s: %s\n", timestr, author, message);
+
+    PGTYPESchar_free(timestr);
 }
 
 void CreateLocksTrigger()
@@ -419,6 +442,11 @@ int main(int argc, char** argv)
         GetDialogTwoMembers(5, name1, name2);
 
         printf("%s %s ", name1, name2);
+    }
+    if (a == 70)
+    {
+        timestamp t = PGTYPEStimestamp_from_asc("1999-01-08 04:05:06", NULL);
+        OutputMessage("daddad", "dasdasdadad", t);
     }
 
     return 0;

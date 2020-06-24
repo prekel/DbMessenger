@@ -5,9 +5,9 @@ CFLAGS = -O0 -Wall -std=gnu11 -DHAVE_LONG_LONG_INT_64
 LDFLAGS = -L$(shell pg_config --libdir) -lecpg -lpgtypes
 INC = -I.. -I$(shell pg_config --includedir)
 
-PGCS = main.pgc Accounts.pgc Context.pgc Dialogs.pgc Locks.pgc Messages.pgc
+PGCS = Accounts.pgc Context.pgc Dialogs.pgc Locks.pgc Messages.pgc
 GENSOURCES = $(PGCS:.pgc=.c)
-SOURCES = IO.c
+SOURCES = main.c IO.c
 OBJECTS = $(GENSOURCES:.c=.o) $(SOURCES:.c=.o)
 
 OUTFILE = DbMessenger

@@ -1,14 +1,14 @@
 ECPG = ecpg
 CC = gcc
 
-CFLAGS = -O0 -Wall -std=gnu11
+CFLAGS = -O0 -Wall -std=gnu11 -DHAVE_LONG_LONG_INT_64
 LDFLAGS = -L$(shell pg_config --libdir) -lecpg -lpgtypes
 INC = -I.. -I$(shell pg_config --includedir)
 
 PGCS = main.pgc Accounts.pgc Context.pgc Dialogs.pgc Locks.pgc Messages.pgc
 GENSOURCES = $(PGCS:.pgc=.c)
 SOURCES = IO.c
-OBJECTS = $(GENSOURCES:.c=.o)
+OBJECTS = $(GENSOURCES:.c=.o) $(SOURCES:.c=.o)
 
 OUTFILE = DbMessenger
 

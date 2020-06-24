@@ -1,3 +1,7 @@
+#include <malloc.h>
+
+#include "Locks.h"
+
 void Lock(char* lockname, int dialogId)
 {
     EXEC SQL BEGIN DECLARE SECTION;

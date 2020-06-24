@@ -1,3 +1,20 @@
+#include <stdio.h>
+#include <stdbool.h>
+#include <malloc.h>
+#include <time.h>
+#include <stdlib.h>
+
+#include <pgtypes.h>
+#include <pgtypes_timestamp.h>
+#include <ecpglib.h>
+#include <ecpgerrno.h>
+#include <sqlca.h>
+
+#include "IO.h"
+#include "Messages.h"
+#include "Locks.h"
+#include "Dialogs.h"
+
 void SendMessage(int authorId, int dialogId, char* message)
 {
     EXEC SQL BEGIN DECLARE SECTION;
@@ -32,7 +49,6 @@ void GetPrintMessages(int dialogId, int lastMessages)
 {
     EXEC SQL BEGIN DECLARE SECTION;
     int dialogId_ = dialogId;
-    int lastMessages_ = lastMessages;
     int offset;
     int count;
     timestamp ts;
@@ -112,8 +128,6 @@ void StartReceivingMessages(int dialogId, int lastMessages)
 {
     EXEC SQL BEGIN DECLARE SECTION;
     int dialogId_ = dialogId;
-    char name1[100];
-    char name2[100];
     EXEC SQL END DECLARE SECTION;
 
     printf("Диалог №%d:\n", dialogId_);

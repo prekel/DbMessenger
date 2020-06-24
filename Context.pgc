@@ -1,3 +1,6 @@
+#include "Context.h"
+#include "Locks.h"
+
 void EnsureCreated()
 {
     EXEC SQL CREATE TABLE table1 (id serial);
@@ -81,4 +84,6 @@ int Connect(char* address, char* port, char* dbname, char* dbUser, char* dbUserP
     strcat(target, dbname);
 
     EXEC SQL CONNECT TO :target AS :connection USER :user_ IDENTIFIED BY :password_;
+
+    return 0;
 }

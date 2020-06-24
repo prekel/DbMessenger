@@ -1,3 +1,5 @@
+#include "Accounts.h"
+
 void Register(char* login, char* password)
 {
     EXEC SQL BEGIN DECLARE SECTION;

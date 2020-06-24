@@ -15,6 +15,7 @@
 #include "Accounts.h"
 #include "Context.h"
 #include "Messages.h"
+#include "Locks.h"
 
 EXEC SQL WHENEVER SQLWARNING SQLPRINT;
 EXEC SQL WHENEVER SQLERROR SQLPRINT;

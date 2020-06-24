@@ -11,8 +11,10 @@ SOURCES = main.c IO.c
 OBJECTS = $(GENSOURCES:.c=.o) $(SOURCES:.c=.o)
 
 OUTFILE = DbMessenger
+EXE = DbMessenger.exe
 
 all: $(SOURCES) $(GENSOURCES) $(OBJECTS) $(OUTFILE)
+exe: $(SOURCES) $(GENSOURCES) $(OBJECTS) $(EXE)
 
 %.c: %.pgc
 	$(ECPG) $<
@@ -21,6 +23,9 @@ all: $(SOURCES) $(GENSOURCES) $(OBJECTS) $(OUTFILE)
 	$(CC) -c $(INC) $(CFLAGS) $< -o $@
 
 $(OUTFILE): $(OBJECTS)
+	$(CC) $(OBJECTS) $(LDFLAGS) -o $@
+
+$(EXE): $(OBJECTS)
 	$(CC) $(OBJECTS) $(LDFLAGS) -o $@
 
 .PHONY: clean

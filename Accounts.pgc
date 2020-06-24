@@ -1,3 +1,7 @@
+#include <string.h>
+
+#include <pgtypes_timestamp.h>
+
 #include "Accounts.h"
 
 EXEC SQL WHENEVER SQLWARNING SQLPRINT;
@@ -56,4 +60,37 @@ bool Login(char* login, char* password)
 
     EXEC SQL COMMIT;
     return res;
+}
+
+void GetAccountInfo(char* nickname, int* outAccountId, char* outTimeLogin, char* outTimeRegister)
+{
+    EXEC SQL BEGIN DECLARE SECTION;
+    char* nickname_ = nickname;
+    timestamp loginTs;
+    timestamp registerTs;
+    int accountId;
+    int loginTs_ind;
+    EXEC SQL END DECLARE SECTION;
+
+    EXEC SQL SELECT AccountId, RegistrationDateTime, LoginDateTime
+        INTO :accountId, :registerTs, :loginTs :loginTs_ind
+        FROM Accounts
+        WHERE Nickname = :nickname_;
+
+    *outAccountId = accountId;
+
+    char* registerStr = PGTYPEStimestamp_to_asc(registerTs);
+    strcpy(outTimeRegister, registerStr);
+    PGTYPESchar_free(registerStr);
+
+    if (loginTs_ind == 0)
+    {
+        char* loginStr = PGTYPEStimestamp_to_asc(loginTs);
+        strcpy(outTimeLogin, loginStr);
+        PGTYPESchar_free(loginStr);
+    }
+    else
+    {
+        strcpy(outTimeLogin, "NULL");
+    }
 }

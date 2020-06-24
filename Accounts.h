@@ -3,12 +3,14 @@
 
 #include <stdbool.h>
 
+void CreateAccountsTable();
+
+void DropAccountsTable();
+
 void Register(char* login, char* password);
 
 bool Login(char* login, char* password);
 
-void CreateAccountsTable();
-
-void DropAccountsTable();
+void GetAccountInfo(char* nickname, int* outAccountId, char* outTimeLogin, char* outTimeRegister);
 
 #endif //ACCOUNTS_H

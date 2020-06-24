@@ -11,6 +11,26 @@
 #include "Messages.h"
 #include "Locks.h"
 
+#define VPN_DEFAULTS
+
+#ifdef VPN_DEFAULTS
+#define DEFAULT_ADDRESS "192.168.66.1"
+#define DEFAULT_PORT "5432"
+#define DEFAULT_DBNAME "demo"
+#define DEFAULT_DBUSER "postgres"
+#define DEFAULT_DBPASSWORD "zasxcd123"
+#define DEFAULT_USER "User1"
+#define DEFAULT_PASSWORD "qwerty"
+#else
+#define DEFAULT_ADDRESS "localhost"
+#define DEFAULT_PORT "5432"
+#define DEFAULT_DBNAME "demo"
+#define DEFAULT_DBUSER "postgres"
+#define DEFAULT_DBPASSWORD "qwerty123"
+#define DEFAULT_USER "User1"
+#define DEFAULT_PASSWORD "qwerty"
+#endif
+
 int main(int argc, char** argv)
 {
     srand(time(NULL));
@@ -26,40 +46,43 @@ int main(int argc, char** argv)
     char user[STRING_SIZE];
     char password[STRING_SIZE];
 
-    bool isSignedIn;
+    bool isSignedIn = false;
     bool success = true;
 
     int res = 0;
-    printf("Введите IP сервера базы данных [localhost]: ");
+    printf("Введите IP сервера базы данных [" DEFAULT_ADDRESS "]: ");
     res = InputLine(address, STRING_SIZE);
-    if (res == 0) strcpy(address, "localhost");
+    if (res == 0) strcpy(address, DEFAULT_ADDRESS);
     success = success && res >= 0;
-    printf("Введите порт сервера базы данных [5432]: ");
+    printf("Введите порт сервера базы данных [" DEFAULT_PORT "]: ");
     res = InputLine(port, STRING_SIZE);
-    if (res == 0) strcpy(port, "5432");
+    if (res == 0) strcpy(port, DEFAULT_PORT);
     success = success && res >= 0;
-    printf("Введите название базы данных [dbmessenger]: ");
+    printf("Введите название базы данных [" DEFAULT_DBNAME "]: ");
     res = InputLine(dbname, STRING_SIZE);
-    //if (res == 0) strcpy(dbname, "dbmessenger");
-    if (res == 0) strcpy(dbname, "demo");
+    if (res == 0) strcpy(dbname, DEFAULT_DBNAME);
     success = success && res >= 0;
-    printf("Введите пользователя базы данных [postgres]: ");
+    printf("Введите пользователя базы данных [" DEFAULT_DBUSER "]: ");
     res = InputLine(dbUser, STRING_SIZE);
-    if (res == 0) strcpy(dbUser, "postgres");
+    if (res == 0) strcpy(dbUser, DEFAULT_DBUSER);
     success = success && res >= 0;
-    printf("Введите пароль пользователя базы данных [qwerty123]: ");
+    printf("Введите пароль пользователя базы данных [" DEFAULT_DBPASSWORD "]: ");
     res = InputLine(dbPassword, STRING_SIZE);
-    if (res == 0) strcpy(dbPassword, "qwerty123");
+    if (res == 0) strcpy(dbPassword, DEFAULT_DBPASSWORD);
     success = success && res >= 0;
 
     if (!success)
     {
-        return 10;
+        fprintf(stderr,
+                "Не удалось считать данные для подключения к базе данных\n");
+        return 1;
     }
 
     if (!Connect(address, port, dbname, dbUser, dbPassword))
     {
-        return 11;
+        fprintf(stderr,
+                "Не удалось подключиться к базе данных\n");
+        return 1;
     }
 
     printf("Подключено к ");
@@ -77,38 +100,41 @@ int main(int argc, char** argv)
     int b = ParseInt(num, &sucb);
     if (sucb == 0)
     {
-        return 13;
+        fprintf(stderr,
+                "Не считать номер действия\n");
+        Disconnect();
+        return 1;
     }
 
     if (b == 3)
     {
         EnsureCreated();
-        return 0;
     }
     else if (b == 4)
     {
         DropTables();
-        return 0;
     }
     else if (b == 5)
     {
         FillSomeData();
-        return 0;
     }
     else
     {
-        printf("Введите логин [User1]: ");
+        printf("Введите логин [" DEFAULT_USER "]: ");
         res = InputLine(user, STRING_SIZE);
-        if (res == 0) strcpy(user, "User1");
+        if (res == 0) strcpy(user, DEFAULT_USER);
         success = success && res >= 0;
-        printf("Введите пароль [qwerty]: ");
+        printf("Введите пароль [" DEFAULT_PASSWORD "]: ");
         res = InputLine(password, STRING_SIZE);
-        if (res == 0) strcpy(password, "qwerty");
+        if (res == 0) strcpy(password, DEFAULT_PASSWORD);
         success = success && res >= 0;
 
         if (!success)
         {
-            return 12;
+            fprintf(stderr,
+                    "Не считать логин или пароль\n");
+            Disconnect();
+            return 1;
         }
 
         if (b == 1)
@@ -116,9 +142,22 @@ int main(int argc, char** argv)
             isSignedIn = Login(user, password);
             if (!isSignedIn)
             {
-                return 14;
+                fprintf(stderr,
+                        "Не правильный логин или пароль\n");
+                Disconnect();
+                return 1;
             }
-            printf("Выберите действие:\n");
+
+            int accountId;
+            char loginTime[STRING_SIZE];
+            char registerTime[STRING_SIZE];
+            GetAccountInfo(user, &accountId, loginTime, registerTime);
+            printf("Текущий пользователь:\n");
+            printf("Номер: %d\n", accountId);
+            printf("Время входа:       %s\n", loginTime);
+            printf("Время регистрации: %s\n", registerTime);
+
+            printf("\nВыберите действие:\n");
             printf("1. Создать диалог\n");
             printf("2. Вывести диалоги текущего пользователя\n");
             printf("3. Вывести участников диалога\n");
@@ -131,13 +170,24 @@ int main(int argc, char** argv)
             int c = ParseInt(num, &succ);
             if (succ == 0)
             {
-                return 123;
+                fprintf(stderr,
+                        "Не считать номер действия\n");
+                Disconnect();
+                return 1;
             }
 
             if (c == 1)
             {
                 printf("Введите имя себеседника: ");
                 char name2[STRING_SIZE];
+                res = InputLine(name2, STRING_SIZE);
+                if (res <= 0)
+                {
+                    fprintf(stderr,
+                            "Не считать имя собеседника\n");
+                    Disconnect();
+                    return 1;
+                }
                 int dialogId = CreateDialog(user, name2);
                 printf("Создан диалог с номером %d", dialogId);
             }
@@ -162,12 +212,15 @@ int main(int argc, char** argv)
                 int dialogId = ParseInt(num, &sucDialogId);
                 if (res <= 0 || sucDialogId == 0)
                 {
-                    return 323;
+                    fprintf(stderr,
+                            "Не считать номер диалога\n");
+                    Disconnect();
+                    return 1;
                 }
                 char name1[STRING_SIZE];
                 char name2[STRING_SIZE];
                 GetDialogTwoMembers(dialogId, name1, name2);
-                printf("Участники диалога №%d: %s %s",
+                printf("Участники диалога №%d: %s; %s",
                        dialogId, name1, name2);
             }
             else if (c == 4)
@@ -181,7 +234,10 @@ int main(int argc, char** argv)
                 int lastMessages = res == 0 ? -1 : ParseInt(num, &suc4);
                 if ((res <= 0 || suc4 != 2) && lastMessages != -1)
                 {
-                    return 324;
+                    fprintf(stderr,
+                            "Не считать номер диалога или сколько сообщений нужно запросить\n");
+                    Disconnect();
+                    return 1;
                 }
                 GetPrintMessages(dialogId, lastMessages);
             }
@@ -196,7 +252,10 @@ int main(int argc, char** argv)
                 int lastMessages = res == 0 ? -1 : ParseInt(num, &suc5);
                 if ((res <= 0 || suc5 != 2) && lastMessages != -1)
                 {
-                    return 325;
+                    fprintf(stderr,
+                            "Не считать номер диалога или сколько сообщений нужно запросить\n");
+                    Disconnect();
+                    return 1;
                 }
                 StartReceivingMessages(dialogId, lastMessages);
             }
@@ -208,7 +267,10 @@ int main(int argc, char** argv)
                 int dialogId = ParseInt(num, &suc6);
                 if (res <= 0 || suc6 != 1)
                 {
-                    return 326;
+                    fprintf(stderr,
+                            "Не считать номер диалога\n");
+                    Disconnect();
+                    return 1;
                 }
                 StartSendingMessages(user, dialogId);
             }
@@ -216,6 +278,14 @@ int main(int argc, char** argv)
         if (b == 2)
         {
             Register(user, password);
+            int accountId;
+            char loginTime[STRING_SIZE];
+            char registerTime[STRING_SIZE];
+            GetAccountInfo(user, &accountId, loginTime, registerTime);
+            printf("Текущий пользователь:\n");
+            printf("Номер: %d\n", accountId);
+            printf("Время входа:       %s\n", loginTime);
+            printf("Время регистрации: %s\n", registerTime);
         }
     }
 

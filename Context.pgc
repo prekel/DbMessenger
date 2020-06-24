@@ -1,0 +1,84 @@
+void EnsureCreated()
+{
+    EXEC SQL CREATE TABLE table1 (id serial);
+
+    EXEC SQL CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
+    EXEC SQL CREATE TABLE Accounts
+    (
+        AccountId            serial PRIMARY KEY,
+        Nickname             text      NOT NULL UNIQUE,
+        RegistrationDateTime timestamp NOT NULL DEFAULT current_timestamp,
+        LoginDateTime        timestamp,
+        PasswordHash         text      NOT NULL
+    );
+
+    EXEC SQL CREATE TABLE Dialogs
+    (
+        DialogId serial PRIMARY KEY
+    );
+
+    EXEC SQL CREATE TABLE Messages
+    (
+        MessageId    serial PRIMARY KEY,
+        Text         text      NOT NULL,
+        SendDateTime timestamp NOT NULL DEFAULT current_timestamp,
+        DialogId     int       NOT NULL,
+        AuthorId     int       NOT NULL,
+        FOREIGN KEY (DialogId) REFERENCES Dialogs (DialogId) ON DELETE CASCADE,
+        FOREIGN KEY (AuthorId) REFERENCES Accounts (AccountId) ON DELETE CASCADE
+    );
+
+    EXEC SQL CREATE TABLE AccountsDialogs
+    (
+        AccountId int NOT NULL,
+        DialogId  int NOT NULL,
+        PRIMARY KEY (AccountId, DialogId),
+        FOREIGN KEY (AccountId) REFERENCES Accounts (AccountId) ON DELETE CASCADE,
+        FOREIGN KEY (DialogId) REFERENCES Dialogs (DialogId) ON DELETE CASCADE
+    );
+
+    EXEC SQL CREATE TABLE Locks
+    (
+        Name text PRIMARY KEY,
+        IsLocked boolean NOT NULL,
+        DialogId int NOT NULL,
+        FOREIGN KEY (DialogId) REFERENCES Dialogs (DialogId) ON DELETE CASCADE
+    );
+
+    CreateLocksTrigger();
+
+    EXEC SQL COMMIT;
+}
+
+void Drop()
+{
+    EXEC SQL DROP TABLE IF EXISTS Locks CASCADE;
+    EXEC SQL DROP TABLE IF EXISTS AccountsDialogs CASCADE;
+    EXEC SQL DROP TABLE IF EXISTS Messages CASCADE;
+    EXEC SQL DROP TABLE IF EXISTS Dialogs CASCADE;
+    EXEC SQL DROP TABLE IF EXISTS Accounts CASCADE;
+    EXEC SQL DROP TABLE IF EXISTS table1 CASCADE;
+
+    EXEC SQL COMMIT;
+}
+
+
+int Connect(char* address, char* port, char* dbname, char* dbUser, char* dbUserPassword)
+{
+    EXEC SQL BEGIN DECLARE SECTION;
+    char target[256] = "";
+    char *user_ = dbUser;
+    char *password_ = dbUserPassword;
+    char *connection = "connection";
+    EXEC SQL END DECLARE SECTION;
+
+    strcat(target, "tcp:postgresql://");
+    strcat(target, address);
+    strcat(target, ":");
+    strcat(target, port);
+    strcat(target, "/");
+    strcat(target, dbname);
+
+    EXEC SQL CONNECT TO :target AS :connection USER :user_ IDENTIFIED BY :password_;
+}

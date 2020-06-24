@@ -1,14 +1,14 @@
 cmake_minimum_required(VERSION 3.10)
 project(DbMessenger C)
 
-set(ecpg_files main.pgc)
+set(ecpg_files main.pgc Accounts.pgc Context.pgc Dialogs.pgc Locks.pgc Messages.pgc)
 
 execute_process(
         COMMAND ecpg ${ecpg_files}
         WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
 )
 
-add_executable(${PROJECT_NAME} main.c)
+add_executable(${PROJECT_NAME} main.c IO.c)
 
 execute_process(COMMAND pg_config --includedir OUTPUT_VARIABLE ECPG_INCLUDEDIR)
 target_include_directories(${PROJECT_NAME} PUBLIC ${ECPG_INCLUDEDIR})

@@ -1,0 +1,100 @@
+//#include <stdio.h>
+//#include <stdbool.h>
+//#include <malloc.h>
+//#include <time.h>
+//#include <stdlib.h>
+//
+//#include <pgtypes.h>
+//#include <pgtypes_timestamp.h>
+//#include <ecpglib.h>
+//#include <ecpgerrno.h>
+//#include <sqlca.h>
+
+#include "Dialogs.h"
+
+EXEC SQL WHENEVER SQLWARNING SQLPRINT;
+EXEC SQL WHENEVER SQLERROR SQLPRINT;
+
+int CreateDialog(char* name1, char* name2)
+{
+    EXEC SQL BEGIN DECLARE SECTION;
+    char* name1_ = name1;
+    char* name2_ = name2;
+    int dialogId = -1;
+    int user1Id = -1;
+    int user2Id = -1;
+    EXEC SQL END DECLARE SECTION;
+
+    EXEC SQL INSERT INTO Dialogs (DialogId) VALUES (DEFAULT) RETURNING dialogid INTO :dialogId;
+
+    EXEC SQL SELECT AccountId INTO :user1Id FROM Accounts WHERE nickname = :name1_;
+    EXEC SQL SELECT AccountId INTO :user2Id FROM Accounts WHERE nickname = :name2_;
+
+    EXEC SQL INSERT INTO AccountsDialogs (AccountId, DialogId) VALUES (:user1Id, :dialogId);
+    EXEC SQL INSERT INTO AccountsDialogs (AccountId, DialogId) VALUES (:user2Id, :dialogId);
+
+    EXEC SQL COMMIT;
+    return dialogId;
+}
+
+int GetDialogsCount(char* nickname)
+{
+    EXEC SQL BEGIN DECLARE SECTION;
+    char* nickname_ = nickname;
+    int userId = -1;
+    int count = -1;
+    EXEC SQL END DECLARE SECTION;
+
+    EXEC SQL SELECT AccountId INTO :userId FROM Accounts WHERE nickname = :nickname_;
+    EXEC SQL SELECT count(*) INTO :count FROM AccountsDialogs WHERE AccountId = :userId;
+
+    return count;
+}
+
+void GetDialogs(char* nickname, int* outArray)
+{
+    EXEC SQL BEGIN DECLARE SECTION;
+    char* nickname_ = nickname;
+    int userId = -1;
+    int id;
+    EXEC SQL END DECLARE SECTION;
+
+    EXEC SQL SELECT AccountId INTO :userId FROM Accounts WHERE nickname = :nickname_;
+
+    EXEC SQL DECLARE cursor2 CURSOR FOR
+        SELECT DialogId FROM AccountsDialogs WHERE AccountId = :userId ORDER BY DialogId;
+    EXEC SQL OPEN cursor2;
+    EXEC SQL WHENEVER NOT FOUND DO BREAK;
+    while (1)
+    {
+        EXEC SQL FETCH cursor2 INTO :id;
+        *outArray = id;
+        outArray++;
+    }
+    EXEC SQL WHENEVER NOT FOUND CONTINUE;
+    EXEC SQL CLOSE cursor2;
+
+    EXEC SQL COMMIT;
+}
+
+void GetDialogTwoMembers(int dialogId, char* outName1, char* outName2)
+{
+    EXEC SQL BEGIN DECLARE SECTION;
+    int dialogId_ = dialogId;
+    char* outName1_ = outName1;
+    char* outName2_ = outName2;
+    EXEC SQL END DECLARE SECTION;
+
+    EXEC SQL DECLARE cursor3 CURSOR FOR
+        SELECT Nickname
+        FROM Accounts
+            JOIN AccountsDialogs ON Accounts.AccountId = AccountsDialogs.AccountId
+        WHERE DialogId = :dialogId_
+        ORDER BY Accounts.AccountId;
+    EXEC SQL OPEN cursor3;
+    EXEC SQL FETCH cursor3 INTO :outName1_;
+    EXEC SQL FETCH cursor3 INTO :outName2_;
+    EXEC SQL CLOSE cursor3;
+
+    EXEC SQL COMMIT;
+}

@@ -5,13 +5,14 @@ CFLAGS = -O0 -Wall -std=gnu11
 LDFLAGS = -L$(shell pg_config --libdir) -lecpg -lpgtypes
 INC = -I.. -I$(shell pg_config --includedir)
 
-PGCS = main.pgc
-SOURCES = $(PGCS:.pgc=.c)
-OBJECTS = $(SOURCES:.c=.o)
+PGCS = main.pgc Accounts.pgc Context.pgc Dialogs.pgc Locks.pgc Messages.pgc
+GENSOURCES = $(PGCS:.pgc=.c)
+SOURCES = IO.c
+OBJECTS = $(GENSOURCES:.c=.o)
 
 OUTFILE = DbMessenger
 
-all: $(SOURCES) $(OBJECTS) $(OUTFILE)
+all: $(SOURCES) $(GENSOURCES) $(OBJECTS) $(OUTFILE)
 
 %.c: %.pgc
 	$(ECPG) $<
@@ -24,13 +25,13 @@ $(OUTFILE): $(OBJECTS)
 
 .PHONY: clean
 clean:
-	rm -f $(SOURCES) $(OBJECTS) $(OUTFILE)
+	rm -f $(GENSOURCES) $(OBJECTS) $(OUTFILE)
 
 .PHONY: cleandel
 cleandel:
-	del $(SOURCES)
+	del $(GENSOURCES)
 	del $(OBJECTS)
-	del $(OUTFILE)
+	del $(OUTFILE).exe
 
 .PHONY: ecpg
-ecpg: ${SOURCES}
+ecpg: ${GENSOURCES}

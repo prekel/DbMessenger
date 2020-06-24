@@ -1,0 +1,127 @@
+void SendMessage(int authorId, int dialogId, char* message)
+{
+    EXEC SQL BEGIN DECLARE SECTION;
+    int authorId_ = authorId;
+    int dialogId_ = dialogId;
+    char* message_ = message;
+    EXEC SQL END DECLARE SECTION;
+
+    EXEC SQL INSERT INTO Messages (Text, AuthorId, DialogId) VALUES (:message_, :authorId_, :dialogId_);
+
+    EXEC SQL COMMIT;
+
+    UnlockAll(dialogId);
+}
+
+void StartSendingMessages(int authorId, int dialogId)
+{
+    while (true)
+    {
+        printf(" > ");
+        fflush(stdout);
+        char msg[1000];
+        while (InputLine(msg, 1000) <= 0)
+        {
+
+        }
+        SendMessage(authorId, dialogId, msg);
+    }
+}
+
+void GetPrintMessages(int dialogId, int lastMessages)
+{
+    EXEC SQL BEGIN DECLARE SECTION;
+    int dialogId_ = dialogId;
+    int lastMessages_ = lastMessages;
+    int offset;
+    int count;
+    timestamp ts;
+    char msg[1000];
+    int authorId;
+    char name1[100];
+    char name2[100];
+    int maxAuthorId;
+    EXEC SQL END DECLARE SECTION;
+
+    GetDialogTwoMembers(dialogId, name1, name2);
+    EXEC SQL SELECT max(AccountId) INTO :maxAuthorId FROM AccountsDialogs WHERE DialogId = :dialogId_;
+
+    if (lastMessages == -1)
+    {
+        offset = 0;
+    }
+    else
+    {
+        EXEC SQL SELECT count(*) INTO :count FROM Messages WHERE DialogId = :dialogId_;
+        offset = count - lastMessages;
+        offset = offset < 0 ? 0 : offset;
+    }
+
+    EXEC SQL DECLARE cursor5 CURSOR FOR
+        SELECT Text, SendDateTime, AuthorId FROM Messages
+        WHERE DialogId = :dialogId_
+        ORDER BY SendDateTime
+        OFFSET :offset;
+    EXEC SQL OPEN cursor5;
+    EXEC SQL WHENEVER NOT FOUND DO BREAK;
+    while (1)
+    {
+        EXEC SQL FETCH cursor5 INTO :msg, :ts, :authorId;
+        OutputMessage(authorId < maxAuthorId ? name1 : name2, msg, ts);
+    }
+    EXEC SQL WHENEVER NOT FOUND CONTINUE;
+    EXEC SQL CLOSE cursor5;
+}
+
+
+void ReceiveMessage(int dialogId)
+{
+    EXEC SQL BEGIN DECLARE SECTION;
+    int dialogId_ = dialogId;
+    char msg[100];
+    timestamp sendDateTime;
+    int authorId = -1;
+    char authorName[100];
+    EXEC SQL END DECLARE SECTION;
+
+    timestamp current;
+    PGTYPEStimestamp_current(&current);
+    char* currentstr = PGTYPEStimestamp_to_asc(current);
+    char lockname[100];
+    sprintf(lockname, "%s-%d", currentstr, rand());
+    PGTYPESchar_free(currentstr);
+
+    Lock(lockname, dialogId);
+    Wait(lockname);
+
+    EXEC SQL SELECT Text, SendDateTime, AuthorId
+        INTO :msg, :sendDateTime, :authorId
+        FROM Messages
+        WHERE DialogId = :dialogId_
+        ORDER BY SendDateTime DESC
+        LIMIT 1;
+
+    EXEC SQL SELECT Nickname INTO :authorName FROM Accounts WHERE AccountId = :authorId;
+
+    OutputMessage(authorName, msg, sendDateTime);
+
+    EXEC SQL COMMIT;
+}
+
+void StartReceivingMessages(int dialogId, int lastMessages)
+{
+    EXEC SQL BEGIN DECLARE SECTION;
+    int dialogId_ = dialogId;
+    char name1[100];
+    char name2[100];
+    EXEC SQL END DECLARE SECTION;
+
+    printf("Диалог №%d:\n", dialogId_);
+
+    GetPrintMessages(dialogId, lastMessages);
+
+    while (true)
+    {
+        ReceiveMessage(dialogId_);
+    }
+}

@@ -1,0 +1,30 @@
+void Register(char* login, char* password)
+{
+    EXEC SQL BEGIN DECLARE SECTION;
+    char* login_ = login;
+    char* password_ = password;
+    EXEC SQL END DECLARE SECTION;
+
+    EXEC SQL INSERT INTO Accounts (Nickname, PasswordHash) VALUES (:login_, crypt(:password_, gen_salt('md5')));
+
+    EXEC SQL COMMIT;
+}
+
+bool Login(char* login, char* password)
+{
+    EXEC SQL BEGIN DECLARE SECTION;
+    char* login_ = login;
+    char* password_ = password;
+    bool res = false;
+    EXEC SQL END DECLARE SECTION;
+
+    EXEC SQL SELECT (PasswordHash = crypt(:password_, PasswordHash)) INTO :res FROM Accounts WHERE Nickname = :login_;
+
+    if (res)
+    {
+        EXEC SQL UPDATE Accounts SET LoginDateTime = current_timestamp WHERE Nickname = :login_;
+    }
+
+    EXEC SQL COMMIT;
+    return res;
+}

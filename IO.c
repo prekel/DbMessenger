@@ -5,8 +5,35 @@
 
 #ifdef _MSC_VER
 #include <Windows.h>
+#include <io.h> 
+#include <fcntl.h>
 #elif _WIN32
+
 #include <windows.h>
+#include <io.h>
+#include <fcntl.h>
+
+#endif
+
+#ifdef _WIN32
+
+// https://stackoverflow.com/a/38161749
+static char* mygets(char* str, int wlen)
+{
+    int save = _setmode(_fileno(stdin), _O_U16TEXT);
+    wchar_t* wstr = malloc(wlen * sizeof(wchar_t));
+    fgetws(wstr, wlen, stdin);
+
+    //make UTF-8:
+    int len = WideCharToMultiByte(CP_UTF8, 0, wstr, -1, 0, 0, 0, 0);
+    if (!len) return NULL;
+    WideCharToMultiByte(CP_UTF8, 0, wstr, -1, str, len, 0, 0);
+    free(wstr);
+
+    _setmode(_fileno(stdin), save);
+    return str;
+}
+
 #endif
 
 int InputLine(char* stringToInput, int maxStringLength)
@@ -15,7 +42,11 @@ int InputLine(char* stringToInput, int maxStringLength)
     bool isError = false;
     while (true)
     {
+#ifdef _WIN32
+        char* fgetsReturn = mygets(stringToInput, maxStringLength);
+#else
         char* fgetsReturn = fgets(stringToInput, maxStringLength, stdin);
+#endif
         if (fgetsReturn == NULL)
         {
             return -2;
@@ -23,7 +54,7 @@ int InputLine(char* stringToInput, int maxStringLength)
 
         stringLength = strlen(stringToInput);
 
-        if (stringToInput[stringLength - 1] != '\n')
+        if (stringLength == 0 || stringToInput[stringLength - 1] != '\n')
         {
             isError = true;
         }
@@ -92,4 +123,5 @@ void SetInputOutputToUtf8()
 void SetUnbufferedOutput()
 {
     setvbuf(stdout, NULL, _IONBF, 0);
+    setvbuf(stderr, NULL, _IONBF, 0);
 }

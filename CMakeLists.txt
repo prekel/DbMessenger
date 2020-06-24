@@ -18,8 +18,8 @@ add_executable(${PROJECT_NAME}
 
 target_compile_definitions(${PROJECT_NAME} PUBLIC HAVE_LONG_LONG_INT_64)
 
-execute_process(COMMAND pg_config --includedir OUTPUT_VARIABLE ECPG_INCLUDEDIR)
-target_include_directories(${PROJECT_NAME} PUBLIC ${ECPG_INCLUDEDIR})
+#execute_process(COMMAND pg_config --includedir OUTPUT_VARIABLE ECPG_INCLUDEDIR)
+target_include_directories(${PROJECT_NAME} PUBLIC C:\\PROGRA~1\\POSTGR~1\\12\\include)
 if (WIN32)
     execute_process(COMMAND pg_config --libdir OUTPUT_VARIABLE ECPG_LIBDIR)
     find_library(ECPG_LIB libecpg HINTS ${ECPG_LIBDIR} REQUIRED)

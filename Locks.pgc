@@ -113,7 +113,6 @@ void UnlockDialog(int dialogId)
 {
     EXEC SQL BEGIN DECLARE SECTION;
     int dialogId_ = dialogId;
-    char* value;
     int transactionsCount = -1;
     int j = 0;
     char** transactionNames;

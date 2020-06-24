@@ -3,7 +3,7 @@ project(DbMessenger C)
 
 set(CMAKE_C_STANDARD 11)
 
-set(ecpg_files main.pgc Accounts.pgc Context.pgc Dialogs.pgc Locks.pgc Messages.pgc)
+set(ecpg_files Accounts.pgc Context.pgc Dialogs.pgc Locks.pgc Messages.pgc)
 
 execute_process(
         COMMAND ecpg ${ecpg_files}
@@ -11,9 +11,9 @@ execute_process(
 )
 
 add_executable(${PROJECT_NAME}
-        main.c Accounts.c Context.c Dialogs.c Locks.c Messages.c
+        Accounts.c Context.c Dialogs.c Locks.c Messages.c
         Accounts.h Context.h Dialogs.h Locks.h Messages.h
-        IO.c
+        IO.c main.c
         IO.h)
 
 target_compile_definitions(${PROJECT_NAME} PUBLIC HAVE_LONG_LONG_INT_64)

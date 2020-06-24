@@ -516,7 +516,6 @@ MigrationBackup/
 
 .idea
 /DbMessenger
-main.c
 Accounts.c
 Context.c
 Dialogs.c

@@ -57,8 +57,15 @@ void SendMessage(int authorId, int dialogId, char* message)
     UnlockDialog(dialogId);
 }
 
-void StartSendingMessages(int authorId, int dialogId)
+void StartSendingMessages(char* nickname, int dialogId)
 {
+    EXEC SQL BEGIN DECLARE SECTION;
+    char* nickname_ = nickname;
+    int authorId;
+    EXEC SQL END DECLARE SECTION;
+
+    EXEC SQL SELECT AccountId INTO :authorId FROM Accounts WHERE Nickname = :nickname_;
+
     while (true)
     {
         printf(" > ");

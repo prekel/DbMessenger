@@ -9,7 +9,7 @@ void DropMessagesTable();
 
 void SendMessage(int authorId, int dialogId, char* message);
 
-void StartSendingMessages(int authorId, int dialogId);
+void StartSendingMessages(char* nickname, int dialogId);
 
 void GetPrintMessages(int dialogId, int lastMessages);
 

@@ -35,13 +35,16 @@ void DropTables()
     EXEC SQL COMMIT;
 }
 
-int Connect(char* address, char* port, char* dbname, char* dbUser, char* dbUserPassword)
+EXEC SQL BEGIN DECLARE SECTION;
+const char* connection = "connection";
+EXEC SQL END DECLARE SECTION;
+
+bool Connect(char* address, char* port, char* dbname, char* dbUser, char* dbUserPassword)
 {
     EXEC SQL BEGIN DECLARE SECTION;
     char target[STRING_SIZE] = "";
     char *user_ = dbUser;
     char *password_ = dbUserPassword;
-    char *connection = "connection";
     EXEC SQL END DECLARE SECTION;
 
     strcat(target, "tcp:postgresql://");
@@ -53,5 +56,22 @@ int Connect(char* address, char* port, char* dbname, char* dbUser, char* dbUserP
 
     EXEC SQL CONNECT TO :target AS :connection USER :user_ IDENTIFIED BY :password_;
 
-    return 0;
+    return true;
+}
+
+void PrintDbVersion()
+{
+    EXEC SQL BEGIN DECLARE SECTION;
+    char version[STRING_SIZE];
+    EXEC SQL END DECLARE SECTION;
+
+    EXEC SQL SELECT version() INTO :version;
+
+    printf("%s\n", version);
+    fflush(stdout);
+}
+
+void Disconnect()
+{
+    EXEC SQL DISCONNECT :connection;
 }

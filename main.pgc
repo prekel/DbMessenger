@@ -17,49 +17,77 @@
 #include "Messages.h"
 #include "Locks.h"
 
-EXEC SQL WHENEVER SQLWARNING SQLPRINT;
-EXEC SQL WHENEVER SQLERROR SQLPRINT;
 
 int main(int argc, char** argv)
 {
     srand(time(NULL));
 
-    EXEC SQL WHENEVER NOT FOUND CONTINUE;
+    char num[STRING_SIZE];
+    InputLine(num, STRING_SIZE);
+    int a = ParseInt(num, NULL);
 
-    EXEC SQL BEGIN DECLARE SECTION;
-    char *target = "tcp:postgresql://localhost:5432/demo";
-    char *target1 = "tcp:postgresql://192.168.66.1:5432/demo";
-    char *user = "postgres";
-    char *password = "qwerty123";
-    char *password1 = "zasxcd123";
-    char *connection = "connection";
-    char *connection1 = "connection1";
-    char ver[256];
-    EXEC SQL END DECLARE SECTION;
-
-    EXEC SQL CONNECT TO :target AS :connection USER :user IDENTIFIED BY :password;
-    //EXEC SQL CONNECT TO :target1 AS :connection1 USER :user IDENTIFIED BY :password1;
-
-    EXEC SQL AT :connection SELECT version() INTO :ver;
-    printf("version: %s\n", ver);
-
-    //EXEC SQL AT :connection1 SELECT version() INTO :ver;
-    //printf("version: %s\n", ver);
-
-    EXEC SQL SET CONNECTION :connection;
-
-    int a;
-    scanf("%d", &a);
+    char address[STRING_SIZE];
+    char port[STRING_SIZE];
+    char dbname[STRING_SIZE];
+    char dbUser[STRING_SIZE];
+    char dbPassword[STRING_SIZE];
+    char user[STRING_SIZE];
+    char password[STRING_SIZE];
 
     if (a == -2)
     {
-        printf("Введите IP сервера базы данных [localhost]: ");
-        printf("Введите порт сервера базы данных [5432]: ");
-        printf("Введите название базы данных [dbmessenger]: ");
-        printf("Введите пользователя базы данных [postgres]: ");
-        printf("Введите пароль пользователя базы данных [qwerty123]: ");
-        printf("Введите логин [User1]: ");
-        printf("Введите пароль [qwerty]: ");
+        bool success = true;
+        int res = 0;
+        printf("Введите IP сервера базы данных [localhost]: "); fflush(stdout);
+        res = InputLine(address, STRING_SIZE);
+        if (res == 0) strcpy(address, "localhost");
+        success &= res >= 0;
+        printf("Введите порт сервера базы данных [5432]: "); fflush(stdout);
+        res = InputLine(port, STRING_SIZE);
+        if (res == 0) strcpy(port, "5432");
+        success &= res >= 0;
+        printf("Введите название базы данных [dbmessenger]: "); fflush(stdout);
+        res = InputLine(dbname, STRING_SIZE);
+        if (res == 0) strcpy(dbname, "dbmessenger");
+        success &= res >= 0;
+        printf("Введите пользователя базы данных [postgres]: "); fflush(stdout);
+        res = InputLine(dbUser, STRING_SIZE);
+        if (res == 0) strcpy(dbUser, "postgres");
+        success &= res >= 0;
+        printf("Введите пароль пользователя базы данных [qwerty123]: "); fflush(stdout);
+        res = InputLine(dbPassword, STRING_SIZE);
+        if (res == 0) strcpy(dbPassword, "qwerty123");
+        success &= res >= 0;
+        if (!success)
+        {
+            return 10;
+        }
+        if (!Connect(address, port, dbname, dbUser, dbPassword))
+        {
+            return 11;
+        }
+
+        printf("Выберите действие:\n");
+        printf("1. Войти\n");
+        printf("1. Зарегистрироваться\n");
+        printf("1. Создать таблицы\n");
+        printf("1. Удалить таблицы\n");
+
+        InputLine(num, STRING_SIZE);
+        int a = ParseInt(num, NULL);
+
+        printf("Введите логин [User1]: "); fflush(stdout);
+        res = InputLine(user, STRING_SIZE);
+        if (res == 0) strcpy(user, "User1");
+        success &= res >= 0;
+        printf("Введите пароль [qwerty]: "); fflush(stdout);
+        res = InputLine(password, STRING_SIZE);
+        if (res == 0) strcpy(password, "qwerty");
+        success &= res >= 0;
+        if (!success)
+        {
+            return 12;
+        }
 
     }
     if (a == -1)

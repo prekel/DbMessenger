@@ -42,7 +42,8 @@ void DropMessagesTable()
     EXEC SQL COMMIT;
 }
 
-void SendMessage(int authorId, int dialogId, char* message)
+
+void AddMessage(int authorId, int dialogId, char* message)
 {
     EXEC SQL BEGIN DECLARE SECTION;
     int authorId_ = authorId;
@@ -53,6 +54,11 @@ void SendMessage(int authorId, int dialogId, char* message)
     EXEC SQL INSERT INTO Messages (Text, AuthorId, DialogId) VALUES (:message_, :authorId_, :dialogId_);
 
     EXEC SQL COMMIT;
+}
+
+void SendMessage(int authorId, int dialogId, char* message)
+{
+    AddMessage(authorId, dialogId, message);
 
     UnlockDialog(dialogId);
 }

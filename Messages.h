@@ -7,6 +7,8 @@ void CreateMessagesTable();
 
 void DropMessagesTable();
 
+void AddMessage(int authorId, int dialogId, char* message);
+
 void SendMessage(int authorId, int dialogId, char* message);
 
 void StartSendingMessages(char* nickname, int dialogId);

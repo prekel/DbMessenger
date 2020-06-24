@@ -74,6 +74,8 @@ int main(int argc, char** argv)
     printf("2. Зарегистрироваться\n");
     printf("3. Создать таблицы\n");
     printf("4. Удалить таблицы\n");
+    printf("5. Заполнить пустую таблицу некоторыми данными\n");
+    fflush(stdout);
 
     InputLine(num, STRING_SIZE);
     int sucb = 0;
@@ -93,9 +95,13 @@ int main(int argc, char** argv)
         DropTables();
         return 0;
     }
+    else if (b == 5)
+    {
+        FillSomeData();
+        return 0;
+    }
     else
     {
-
         printf("Введите логин [User1]: ");
         fflush(stdout);
         res = InputLine(user, STRING_SIZE);
@@ -126,7 +132,7 @@ int main(int argc, char** argv)
             printf("4. Запросить сообщения\n");
             printf("5. Принимать сообщения\n");
             printf("6. Отправлять сообщения\n");
-
+            fflush(stdout);
 
             InputLine(num, STRING_SIZE);
             int succ = 0;

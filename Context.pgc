@@ -24,6 +24,28 @@ void EnsureCreated()
     EXEC SQL COMMIT;
 }
 
+void FillSomeData()
+{
+    Register("User1", "qwerty");
+    Register("User2", "qwerty");
+    Register("User3", "qwerty1");
+    Register("User4", "qwerty123");
+
+    CreateDialog("User1", "User2");
+    CreateDialog("User1", "User3");
+    CreateDialog("User2", "User3");
+    CreateDialog("User4", "User3");
+
+    AddMessage(1, 1, "Message1 User1 -> (User1, User2)");
+    AddMessage(1, 1, "Message2 User1 -> (User1, User2)");
+    AddMessage(2, 1, "Message3 User2 -> (User1, User2)");
+    AddMessage(1, 2, "Message4 User1 -> (User1, User3)");
+    AddMessage(3, 3, "Message5 User3 -> (User2, User3)");
+    AddMessage(2, 3, "Message6 User2 -> (User2, User3)");
+    AddMessage(3, 3, "Message7 User3 -> (User2, User3)");
+    AddMessage(4, 4, "Message8 User4 -> (User4, User3)");
+}
+
 void DropTables()
 {
     DropLocksTableTrigger();

@@ -5,6 +5,8 @@
 
 void EnsureCreated();
 
+void FillSomeData();
+
 void DropTables();
 
 bool Connect(char* address, char* port, char* dbname, char* dbUser, char* dbUserPassword);

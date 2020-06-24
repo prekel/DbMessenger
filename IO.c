@@ -23,7 +23,7 @@ int InputLine(char* stringToInput, int maxStringLength)
 
         stringLength = strlen(stringToInput);
 
-        if (stringToInput[stringLength - 1] != '\n')
+        if (stringLength == 0 || stringToInput[stringLength - 1] != '\n')
         {
             isError = true;
         }
@@ -92,4 +92,5 @@ void SetInputOutputToUtf8()
 void SetUnbufferedOutput()
 {
     setvbuf(stdout, NULL, _IONBF, 0);
+    setvbuf(stderr, NULL, _IONBF, 0);
 }

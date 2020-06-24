@@ -15,6 +15,8 @@ bool TryParseInt(char* string, int* pResult);
 
 int ParseInt(char* string, int* pSuccessfulCount);
 
-void ConsoleToUtf8();
+void SetInputOutputToUtf8();
+
+void SetUnbufferedOutput();
 
 #endif //IO_H

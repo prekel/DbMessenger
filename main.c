@@ -14,7 +14,8 @@
 int main(int argc, char** argv)
 {
     srand(time(NULL));
-    ConsoleToUtf8();
+    SetInputOutputToUtf8();
+    SetUnbufferedOutput();
 
     char num[STRING_SIZE];
     char address[STRING_SIZE];
@@ -30,28 +31,23 @@ int main(int argc, char** argv)
 
     int res = 0;
     printf("Введите IP сервера базы данных [localhost]: ");
-    fflush(stdout);
     res = InputLine(address, STRING_SIZE);
     if (res == 0) strcpy(address, "localhost");
     success = success && res >= 0;
     printf("Введите порт сервера базы данных [5432]: ");
-    fflush(stdout);
     res = InputLine(port, STRING_SIZE);
     if (res == 0) strcpy(port, "5432");
     success = success && res >= 0;
     printf("Введите название базы данных [dbmessenger]: ");
-    fflush(stdout);
     res = InputLine(dbname, STRING_SIZE);
     //if (res == 0) strcpy(dbname, "dbmessenger");
     if (res == 0) strcpy(dbname, "demo");
     success = success && res >= 0;
     printf("Введите пользователя базы данных [postgres]: ");
-    fflush(stdout);
     res = InputLine(dbUser, STRING_SIZE);
     if (res == 0) strcpy(dbUser, "postgres");
     success = success && res >= 0;
     printf("Введите пароль пользователя базы данных [qwerty123]: ");
-    fflush(stdout);
     res = InputLine(dbPassword, STRING_SIZE);
     if (res == 0) strcpy(dbPassword, "qwerty123");
     success = success && res >= 0;
@@ -75,7 +71,6 @@ int main(int argc, char** argv)
     printf("3. Создать таблицы\n");
     printf("4. Удалить таблицы\n");
     printf("5. Заполнить пустую таблицу некоторыми данными\n");
-    fflush(stdout);
 
     InputLine(num, STRING_SIZE);
     int sucb = 0;
@@ -103,12 +98,10 @@ int main(int argc, char** argv)
     else
     {
         printf("Введите логин [User1]: ");
-        fflush(stdout);
         res = InputLine(user, STRING_SIZE);
         if (res == 0) strcpy(user, "User1");
         success = success && res >= 0;
         printf("Введите пароль [qwerty]: ");
-        fflush(stdout);
         res = InputLine(password, STRING_SIZE);
         if (res == 0) strcpy(password, "qwerty");
         success = success && res >= 0;
@@ -132,7 +125,6 @@ int main(int argc, char** argv)
             printf("4. Запросить сообщения\n");
             printf("5. Принимать сообщения\n");
             printf("6. Отправлять сообщения\n");
-            fflush(stdout);
 
             InputLine(num, STRING_SIZE);
             int succ = 0;
@@ -160,7 +152,6 @@ int main(int argc, char** argv)
                     printf("%d ", dialogs[i]);
                 }
                 printf("\n");
-                fflush(stdout);
                 free(dialogs);
             }
             else if (c == 3)
@@ -178,7 +169,6 @@ int main(int argc, char** argv)
                 GetDialogTwoMembers(dialogId, name1, name2);
                 printf("Участники диалога №%d: %s %s",
                        dialogId, name1, name2);
-                fflush(stdout);
             }
             else if (c == 4)
             {
@@ -186,10 +176,10 @@ int main(int argc, char** argv)
                 printf("Введите номер диалога: ");
                 res = InputLine(num, STRING_SIZE);
                 int dialogId = ParseInt(num, &suc4);
-                printf("Введите, сколько последних сообщений нужно запросить (-1 для всех): ");
+                printf("Введите, сколько последних сообщений нужно запросить (ничего для всех): ");
                 res = InputLine(num, STRING_SIZE);
-                int lastMessages = ParseInt(num, &suc4);
-                if (res <= 0 || suc4 != 2)
+                int lastMessages = res == 0 ? -1 : ParseInt(num, &suc4);
+                if ((res <= 0 || suc4 != 2) && lastMessages != -1)
                 {
                     return 324;
                 }
@@ -201,10 +191,10 @@ int main(int argc, char** argv)
                 printf("Введите номер диалога: ");
                 res = InputLine(num, STRING_SIZE);
                 int dialogId = ParseInt(num, &suc5);
-                printf("Введите, сколько последних сообщений нужно запросить (-1 для всех): ");
+                printf("Введите, сколько последних сообщений нужно запросить (ничего для всех): ");
                 res = InputLine(num, STRING_SIZE);
-                int lastMessages = ParseInt(num, &suc5);
-                if (res <= 0 || suc5 != 2)
+                int lastMessages = res == 0 ? -1 : ParseInt(num, &suc5);
+                if ((res <= 0 || suc5 != 2) && lastMessages != -1)
                 {
                     return 325;
                 }

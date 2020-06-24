@@ -90,7 +90,6 @@ void PrintDbVersion()
     EXEC SQL SELECT version() INTO :version;
 
     printf("%s\n", version);
-    fflush(stdout);
 }
 
 void Disconnect()

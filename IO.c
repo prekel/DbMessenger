@@ -46,7 +46,6 @@ void OutputMessage(char* author, char* message, timestamp time)
     char* timestr = PGTYPEStimestamp_to_asc(time);
 
     printf("%-26s %15s: %s\n", timestr, author, message);
-    fflush(stdout);
 
     PGTYPESchar_free(timestr);
 }
@@ -82,10 +81,15 @@ int ParseInt(char* string, int* pSuccessfulCount)
     return result;
 }
 
-void ConsoleToUtf8()
+void SetInputOutputToUtf8()
 {
 #ifdef _WIN32
     SetConsoleOutputCP(CP_UTF8);
     SetConsoleCP(CP_UTF8);
 #endif
+}
+
+void SetUnbufferedOutput()
+{
+    setvbuf(stdout, NULL, _IONBF, 0);
 }

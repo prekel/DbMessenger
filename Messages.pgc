@@ -75,7 +75,6 @@ void StartSendingMessages(char* nickname, int dialogId)
     while (true)
     {
         printf(" > ");
-        fflush(stdout);
         char msg[MESSAGE_SIZE];
         while (InputLine(msg, MESSAGE_SIZE) <= 0)
         {

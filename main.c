@@ -11,8 +11,6 @@
 #include "Messages.h"
 #include "Locks.h"
 
-#define VPN_DEFAULTS
-
 #ifdef VPN_DEFAULTS
 #define DEFAULT_ADDRESS "192.168.66.1"
 #define DEFAULT_PORT "5432"
@@ -94,6 +92,7 @@ int main(int argc, char** argv)
     printf("3. Создать таблицы\n");
     printf("4. Удалить таблицы\n");
     printf("5. Заполнить пустую таблицу некоторыми данными\n");
+    printf("6. Завершить все отложенные транзакции\n");
 
     InputLine(num, STRING_SIZE);
     int sucb = 0;
@@ -117,6 +116,10 @@ int main(int argc, char** argv)
     else if (b == 5)
     {
         FillSomeData();
+    }
+    else if (b == 6)
+    {
+        UnlockAll();
     }
     else
     {

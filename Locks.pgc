@@ -24,6 +24,8 @@ void CreateLocksTableTrigger()
 
 void DropLocksTableTrigger()
 {
+    EXEC SQL DROP FUNCTION IF EXISTS clear_old_locks() CASCADE;
+
     EXEC SQL DROP TABLE IF EXISTS Locks CASCADE;
 
     EXEC SQL COMMIT;
@@ -83,7 +85,7 @@ void Wait(char* lockname)
     EXEC SQL COMMIT;
 }
 
-void Unlock(char* lockname)
+void Unlock(char* lockname, bool isUpdateNeeded)
 {
     EXEC SQL BEGIN DECLARE SECTION;
     char* lockname_ = lockname;
@@ -99,9 +101,12 @@ void Unlock(char* lockname)
 
     EXEC SQL COMMIT;
 
-    EXEC SQL UPDATE Locks SET IsLocked = false WHERE Name = :lockname_;
+    if (isUpdateNeeded)
+    {
+        EXEC SQL UPDATE Locks SET IsLocked = false WHERE Name = :lockname_;
 
-    EXEC SQL COMMIT;
+        EXEC SQL COMMIT;
+    }
 }
 
 void UnlockDialog(int dialogId)
@@ -137,8 +142,49 @@ void UnlockDialog(int dialogId)
 
     for (int i = 0; i < transactionsCount; i++)
     {
-        Unlock(transactionNames[i]);
+        Unlock(transactionNames[i], true);
         free(transactionNames[i]);
     }
     free(transactionNames);
+}
+
+void UnlockAll()
+{
+    EXEC SQL BEGIN DECLARE SECTION;
+    int j = 0;
+    int transactionsCount = -1;
+    char** transactionNames;
+    EXEC SQL END DECLARE SECTION;
+
+    EXEC SQL SELECT count(*) INTO :transactionsCount FROM pg_prepared_xacts;
+
+    transactionNames = (char**) malloc (sizeof (char*) * transactionsCount);
+    for (int i = 0; i < transactionsCount; i++)
+    {
+        transactionNames[i] = (char*) malloc (STRING_SIZE * sizeof(char));
+    }
+
+    EXEC SQL DECLARE cursorA CURSOR FOR
+        SELECT gid FROM pg_prepared_xacts;
+    EXEC SQL OPEN cursorA;
+    EXEC SQL WHENEVER NOT FOUND DO BREAK;
+    while (true)
+    {
+        EXEC SQL FETCH cursorA INTO :transactionNames[j++];
+    }
+    EXEC SQL WHENEVER NOT FOUND CONTINUE;
+    EXEC SQL CLOSE cursorA;
+
+    EXEC SQL COMMIT;
+
+    for (int i = 0; i < transactionsCount; i++)
+    {
+        Unlock(transactionNames[i], false);
+        free(transactionNames[i]);
+    }
+    free(transactionNames);
+
+    EXEC SQL UPDATE Locks SET isLocked = false;
+
+    EXEC SQL COMMIT;
 }

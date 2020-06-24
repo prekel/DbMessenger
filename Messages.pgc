@@ -15,6 +15,33 @@
 #include "Locks.h"
 #include "Dialogs.h"
 
+EXEC SQL WHENEVER SQLWARNING SQLPRINT;
+EXEC SQL WHENEVER SQLERROR SQLPRINT;
+EXEC SQL WHENEVER NOT FOUND CONTINUE;
+
+void CreateMessagesTable()
+{
+    EXEC SQL CREATE TABLE Messages
+    (
+        MessageId    serial    PRIMARY KEY,
+        Text         text      NOT NULL,
+        SendDateTime timestamp NOT NULL DEFAULT current_timestamp,
+        DialogId     int       NOT NULL,
+        AuthorId     int       NOT NULL,
+        FOREIGN KEY (DialogId) REFERENCES Dialogs (DialogId) ON DELETE CASCADE,
+        FOREIGN KEY (AuthorId) REFERENCES Accounts (AccountId) ON DELETE CASCADE
+    );
+
+    EXEC SQL COMMIT;
+}
+
+void DropMessagesTable()
+{
+    EXEC SQL DROP TABLE IF EXISTS Messages CASCADE;
+
+    EXEC SQL COMMIT;
+}
+
 void SendMessage(int authorId, int dialogId, char* message)
 {
     EXEC SQL BEGIN DECLARE SECTION;
@@ -27,7 +54,7 @@ void SendMessage(int authorId, int dialogId, char* message)
 
     EXEC SQL COMMIT;
 
-    UnlockAll(dialogId);
+    UnlockDialog(dialogId);
 }
 
 void StartSendingMessages(int authorId, int dialogId)
@@ -36,8 +63,8 @@ void StartSendingMessages(int authorId, int dialogId)
     {
         printf(" > ");
         fflush(stdout);
-        char msg[1000];
-        while (InputLine(msg, 1000) <= 0)
+        char msg[MESSAGE_SIZE];
+        while (InputLine(msg, MESSAGE_SIZE) <= 0)
         {
 
         }
@@ -52,10 +79,10 @@ void GetPrintMessages(int dialogId, int lastMessages)
     int offset;
     int count;
     timestamp ts;
-    char msg[1000];
+    char msg[MESSAGE_SIZE];
     int authorId;
-    char name1[100];
-    char name2[100];
+    char name1[STRING_SIZE];
+    char name2[STRING_SIZE];
     int maxAuthorId;
     EXEC SQL END DECLARE SECTION;
 
@@ -80,7 +107,7 @@ void GetPrintMessages(int dialogId, int lastMessages)
         OFFSET :offset;
     EXEC SQL OPEN cursor5;
     EXEC SQL WHENEVER NOT FOUND DO BREAK;
-    while (1)
+    while (true)
     {
         EXEC SQL FETCH cursor5 INTO :msg, :ts, :authorId;
         OutputMessage(authorId < maxAuthorId ? name1 : name2, msg, ts);
@@ -94,16 +121,16 @@ void ReceiveMessage(int dialogId)
 {
     EXEC SQL BEGIN DECLARE SECTION;
     int dialogId_ = dialogId;
-    char msg[100];
+    char msg[MESSAGE_SIZE];
     timestamp sendDateTime;
-    int authorId = -1;
-    char authorName[100];
+    int authorId;
+    char authorName[STRING_SIZE];
     EXEC SQL END DECLARE SECTION;
 
     timestamp current;
     PGTYPEStimestamp_current(&current);
     char* currentstr = PGTYPEStimestamp_to_asc(current);
-    char lockname[100];
+    char lockname[STRING_SIZE];
     sprintf(lockname, "%s-%d", currentstr, rand());
     PGTYPESchar_free(currentstr);
 

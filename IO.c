@@ -3,6 +3,12 @@
 #include <string.h>
 #include <pgtypes_timestamp.h>
 
+#ifdef _MSC_VER
+#include <Windows.h>
+#elif _WIN32
+#include <windows.h>
+#endif
+
 int InputLine(char* stringToInput, int maxStringLength)
 {
     unsigned long stringLength = 0;
@@ -74,4 +80,12 @@ int ParseInt(char* string, int* pSuccessfulCount)
         return 0;
     }
     return result;
+}
+
+void ConsoleToUtf8()
+{
+#ifdef _WIN32
+    SetConsoleOutputCP(CP_UTF8);
+    SetConsoleCP(CP_UTF8);
+#endif
 }

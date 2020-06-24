@@ -2,15 +2,54 @@
 
 EXEC SQL WHENEVER SQLWARNING SQLPRINT;
 EXEC SQL WHENEVER SQLERROR SQLPRINT;
+EXEC SQL WHENEVER NOT FOUND CONTINUE;
+
+void CreateDialogsTable()
+{
+    EXEC SQL CREATE TABLE Dialogs
+    (
+        DialogId serial PRIMARY KEY
+    );
+
+    EXEC SQL COMMIT;
+}
+
+void DropDialogsTable()
+{
+    EXEC SQL DROP TABLE IF EXISTS Dialogs CASCADE;
+
+    EXEC SQL COMMIT;
+}
+
+void CreateAccountsDialogsTable()
+{
+    EXEC SQL CREATE TABLE AccountsDialogs
+    (
+        AccountId int NOT NULL,
+        DialogId  int NOT NULL,
+        PRIMARY KEY (AccountId, DialogId),
+        FOREIGN KEY (AccountId) REFERENCES Accounts (AccountId) ON DELETE CASCADE,
+        FOREIGN KEY (DialogId) REFERENCES Dialogs (DialogId) ON DELETE CASCADE
+    );
+
+    EXEC SQL COMMIT;
+}
+
+void DropAccountsDialogsTable()
+{
+    EXEC SQL DROP TABLE IF EXISTS AccountsDialogs CASCADE;
+
+    EXEC SQL COMMIT;
+}
 
 int CreateDialog(char* name1, char* name2)
 {
     EXEC SQL BEGIN DECLARE SECTION;
     char* name1_ = name1;
     char* name2_ = name2;
-    int dialogId = -1;
-    int user1Id = -1;
-    int user2Id = -1;
+    int dialogId;
+    int user1Id;
+    int user2Id;
     EXEC SQL END DECLARE SECTION;
 
     EXEC SQL INSERT INTO Dialogs (DialogId) VALUES (DEFAULT) RETURNING dialogId INTO :dialogId;
@@ -29,8 +68,8 @@ int GetDialogsCount(char* nickname)
 {
     EXEC SQL BEGIN DECLARE SECTION;
     char* nickname_ = nickname;
-    int userId = -1;
-    int count = -1;
+    int userId;
+    int count;
     EXEC SQL END DECLARE SECTION;
 
     EXEC SQL SELECT AccountId INTO :userId FROM Accounts WHERE nickname = :nickname_;
@@ -43,7 +82,7 @@ void GetDialogs(char* nickname, int* outArray)
 {
     EXEC SQL BEGIN DECLARE SECTION;
     char* nickname_ = nickname;
-    int userId = -1;
+    int userId;
     int id;
     EXEC SQL END DECLARE SECTION;
 
@@ -53,7 +92,7 @@ void GetDialogs(char* nickname, int* outArray)
         SELECT DialogId FROM AccountsDialogs WHERE AccountId = :userId ORDER BY DialogId;
     EXEC SQL OPEN cursor2;
     EXEC SQL WHENEVER NOT FOUND DO BREAK;
-    while (1)
+    while (true)
     {
         EXEC SQL FETCH cursor2 INTO :id;
         *outArray = id;

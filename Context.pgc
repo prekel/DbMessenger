@@ -1,76 +1,44 @@
+#include "IO.h"
+#include "Dialogs.h"
+#include "Accounts.h"
 #include "Context.h"
+#include "Messages.h"
 #include "Locks.h"
+
+EXEC SQL WHENEVER SQLWARNING SQLPRINT;
+EXEC SQL WHENEVER SQLERROR SQLPRINT;
+EXEC SQL WHENEVER NOT FOUND CONTINUE;
 
 void EnsureCreated()
 {
-    EXEC SQL CREATE TABLE table1 (id serial);
+    CreateAccountsTable();
 
-    EXEC SQL CREATE EXTENSION IF NOT EXISTS pgcrypto;
+    CreateDialogsTable();
 
-    EXEC SQL CREATE TABLE Accounts
-    (
-        AccountId            serial PRIMARY KEY,
-        Nickname             text      NOT NULL UNIQUE,
-        RegistrationDateTime timestamp NOT NULL DEFAULT current_timestamp,
-        LoginDateTime        timestamp,
-        PasswordHash         text      NOT NULL
-    );
+    CreateMessagesTable();
 
-    EXEC SQL CREATE TABLE Dialogs
-    (
-        DialogId serial PRIMARY KEY
-    );
+    CreateAccountsDialogsTable();
 
-    EXEC SQL CREATE TABLE Messages
-    (
-        MessageId    serial PRIMARY KEY,
-        Text         text      NOT NULL,
-        SendDateTime timestamp NOT NULL DEFAULT current_timestamp,
-        DialogId     int       NOT NULL,
-        AuthorId     int       NOT NULL,
-        FOREIGN KEY (DialogId) REFERENCES Dialogs (DialogId) ON DELETE CASCADE,
-        FOREIGN KEY (AuthorId) REFERENCES Accounts (AccountId) ON DELETE CASCADE
-    );
-
-    EXEC SQL CREATE TABLE AccountsDialogs
-    (
-        AccountId int NOT NULL,
-        DialogId  int NOT NULL,
-        PRIMARY KEY (AccountId, DialogId),
-        FOREIGN KEY (AccountId) REFERENCES Accounts (AccountId) ON DELETE CASCADE,
-        FOREIGN KEY (DialogId) REFERENCES Dialogs (DialogId) ON DELETE CASCADE
-    );
-
-    EXEC SQL CREATE TABLE Locks
-    (
-        Name text PRIMARY KEY,
-        IsLocked boolean NOT NULL,
-        DialogId int NOT NULL,
-        FOREIGN KEY (DialogId) REFERENCES Dialogs (DialogId) ON DELETE CASCADE
-    );
-
-    CreateLocksTrigger();
+    CreateLocksTableTrigger();
 
     EXEC SQL COMMIT;
 }
 
-void Drop()
+void DropTables()
 {
-    EXEC SQL DROP TABLE IF EXISTS Locks CASCADE;
-    EXEC SQL DROP TABLE IF EXISTS AccountsDialogs CASCADE;
-    EXEC SQL DROP TABLE IF EXISTS Messages CASCADE;
-    EXEC SQL DROP TABLE IF EXISTS Dialogs CASCADE;
-    EXEC SQL DROP TABLE IF EXISTS Accounts CASCADE;
-    EXEC SQL DROP TABLE IF EXISTS table1 CASCADE;
+    DropLocksTableTrigger();
+    DropAccountsDialogsTable();
+    DropMessagesTable();
+    DropDialogsTable();
+    DropAccountsTable();
 
     EXEC SQL COMMIT;
 }
-
 
 int Connect(char* address, char* port, char* dbname, char* dbUser, char* dbUserPassword)
 {
     EXEC SQL BEGIN DECLARE SECTION;
-    char target[256] = "";
+    char target[STRING_SIZE] = "";
     char *user_ = dbUser;
     char *password_ = dbUserPassword;
     char *connection = "connection";

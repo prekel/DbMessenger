@@ -1,6 +1,12 @@
 #ifndef MESSAGES_H
 #define MESSAGES_H
 
+#define MESSAGE_SIZE 1024
+
+void CreateMessagesTable();
+
+void DropMessagesTable();
+
 void SendMessage(int authorId, int dialogId, char* message);
 
 void StartSendingMessages(int authorId, int dialogId);

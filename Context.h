@@ -3,7 +3,7 @@
 
 void EnsureCreated();
 
-void Drop();
+void DropTables();
 
 int Connect(char* address, char* port, char* dbname, char* dbUser, char* dbUserPassword);
 

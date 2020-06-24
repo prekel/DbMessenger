@@ -1,14 +1,8 @@
 #include <stdio.h>
 #include <stdbool.h>
-#include <malloc.h>
+#include <string.h>
 #include <time.h>
 #include <stdlib.h>
-
-#include <pgtypes.h>
-#include <pgtypes_timestamp.h>
-#include <ecpglib.h>
-#include <ecpgerrno.h>
-#include <sqlca.h>
 
 #include "IO.h"
 #include "Dialogs.h"
@@ -17,15 +11,12 @@
 #include "Messages.h"
 #include "Locks.h"
 
-
 int main(int argc, char** argv)
 {
     srand(time(NULL));
+    ConsoleToUtf8();
 
     char num[STRING_SIZE];
-    InputLine(num, STRING_SIZE);
-    int a = ParseInt(num, NULL);
-
     char address[STRING_SIZE];
     char port[STRING_SIZE];
     char dbname[STRING_SIZE];
@@ -40,7 +31,7 @@ int main(int argc, char** argv)
     fflush(stdout);
     res = InputLine(address, STRING_SIZE);
     if (res == 0) strcpy(address, "localhost");
-    success = res >= 0;
+    success = success && res >= 0;
     printf("Введите порт сервера базы данных [5432]: ");
     fflush(stdout);
     res = InputLine(port, STRING_SIZE);
@@ -93,7 +84,7 @@ int main(int argc, char** argv)
     }
     if (b == 4)
     {
-        Drop();
+        DropTables();
         return 0;
     }
 
@@ -143,116 +134,6 @@ int main(int argc, char** argv)
     if (b == 2)
     {
         Register(user, password);
-    }
-
-    return 0;
-
-
-
-    if (a == -1)
-    {
-        EnsureCreated();
-    }
-    if (a == 0)
-    {
-        EnsureCreated();
-        Register("qwerty", "123456");
-        Register("Vladislav213", "123456");
-        CreateDialog("Vladislav213", "qwerty");
-    }
-    if (a == 1)
-    {
-        Drop();
-    }
-    if (a == 2)
-    {
-        Register("Vladislav213", "123456");
-    }
-    if (a == 2123)
-    {
-        Register("qwerty", "123456");
-    }
-    if (a == 3)
-    {
-        Login("Vladislav213", "1234516");
-    }
-    if (a == 10)
-    {
-        Lock("qwerty5", 1);
-    }
-    if (a == 11)
-    {
-        Wait("qwerty5");
-    }
-    if (a == 12)
-    {
-        Unlock("lockname");
-        Unlock("lockname1");
-    }
-    if (a == 20)
-    {
-        Lock("qwerty3", 1);
-    }
-    if (a == 21)
-    {
-        Wait("qwerty3");
-    }
-    if (a == 22)
-    {
-        Unlock("qwerty3");
-    }
-    if (a == 30)
-    {
-        CreateLocksTrigger();
-    }
-    if (a == 40)
-    {
-        CreateDialog("Vladislav213", "qwerty");
-    }
-    if (a == 50)
-    {
-        int c = GetDialogsCount("Vladislav213");
-        int* a = (int*) malloc(c * sizeof(int));
-        GetDialogs("Vladislav213", a);
-        for (int i = 0; i < c; i++)
-        {
-            printf("%d ", a[i]);
-        }
-        free(a);
-    }
-    if (a == 60)
-    {
-        char name1[1000];
-        char name2[1000];
-
-        GetDialogTwoMembers(1, name1, name2);
-
-        printf("%s %s ", name1, name2);
-    }
-    if (a == 70)
-    {
-        timestamp t = PGTYPEStimestamp_from_asc("1999-01-08 04:05:06", NULL);
-        OutputMessage("daddad", "dasdasdadad", t);
-    }
-    if (a == 80)
-    {
-        SendMessage(1, 1, "message5");
-    }
-    if (a == 90)
-    {
-        ReceiveMessage(1);
-    }
-    if (a == 100)
-    {
-        StartReceivingMessages(1, 5);
-    }
-    if (a == 110)
-    {
-        GetPrintMessages(1, -1);
-    }
-    if (a == 120)
-    {
-        StartSendingMessages(1, 1);
     }
 
     return 0;

@@ -1,6 +1,53 @@
 #include <malloc.h>
 
 #include "Locks.h"
+#include "IO.h"
+
+EXEC SQL WHENEVER SQLWARNING SQLPRINT;
+EXEC SQL WHENEVER SQLERROR SQLPRINT;
+EXEC SQL WHENEVER NOT FOUND CONTINUE;
+
+void CreateLocksTableTrigger()
+{
+    EXEC SQL CREATE TABLE Locks
+    (
+        Name     varchar(50) PRIMARY KEY,
+        IsLocked boolean     NOT NULL,
+        DialogId int         NOT NULL,
+        FOREIGN KEY (DialogId) REFERENCES Dialogs (DialogId) ON DELETE CASCADE
+    );
+
+    EXEC SQL COMMIT;
+
+    CreateLocksTrigger();
+}
+
+void DropLocksTableTrigger()
+{
+    EXEC SQL DROP TABLE IF EXISTS Locks CASCADE;
+
+    EXEC SQL COMMIT;
+}
+
+void CreateLocksTrigger()
+{
+    EXEC SQL DROP FUNCTION IF EXISTS clear_old_locks CASCADE;
+    EXEC SQL CREATE OR REPLACE FUNCTION clear_old_locks() RETURNS trigger AS
+    $$
+    BEGIN
+        DELETE FROM Locks WHERE isLocked = false;
+        RETURN NULL;
+    END;
+    $$ LANGUAGE plpgsql;
+
+    EXEC SQL CREATE TRIGGER clear_old_locks
+        BEFORE INSERT
+        ON Locks
+        FOR STATEMENT
+    EXECUTE PROCEDURE clear_old_locks();
+
+    EXEC SQL COMMIT;
+}
 
 void Lock(char* lockname, int dialogId)
 {
@@ -16,7 +63,7 @@ void Lock(char* lockname, int dialogId)
     EXEC SQL SELECT isLocked INTO :_ FROM Locks WHERE Name = :lockname_ FOR UPDATE;
 
     //EXEC SQL PREPARE TRANSACTION :lockname_;
-    char transaction[256] = "prepare transaction '";
+    char transaction[STRING_SIZE] = "prepare transaction '";
     strcat(transaction, lockname_);
     strcat(transaction, "'");
     ECPGtrans(__LINE__, NULL, transaction);
@@ -45,7 +92,7 @@ void Unlock(char* lockname)
     EXEC SQL COMMIT;
 
     //EXEC SQL COMMIT PREPARED :lockname_;
-    char transaction[256] = "commit prepared '";
+    char transaction[STRING_SIZE] = "commit prepared '";
     strcat(transaction, lockname_);
     strcat(transaction, "'");
     ECPGtrans(__LINE__, NULL, transaction);
@@ -57,7 +104,7 @@ void Unlock(char* lockname)
     EXEC SQL COMMIT;
 }
 
-void UnlockAll(int dialogId)
+void UnlockDialog(int dialogId)
 {
     EXEC SQL BEGIN DECLARE SECTION;
     int dialogId_ = dialogId;
@@ -72,14 +119,14 @@ void UnlockAll(int dialogId)
     transactionNames = (char**) malloc (sizeof (char*) * transactionsCount);
     for (int i = 0; i < transactionsCount; i++)
     {
-        transactionNames[i] = (char*) malloc (100 * sizeof(char));
+        transactionNames[i] = (char*) malloc (STRING_SIZE * sizeof(char));
     }
 
     EXEC SQL DECLARE cursor4 CURSOR FOR
         SELECT Name FROM locks WHERE DialogId = :dialogId_ AND isLocked = true;
     EXEC SQL OPEN cursor4;
     EXEC SQL WHENEVER NOT FOUND DO BREAK;
-    while (1)
+    while (true)
     {
         EXEC SQL FETCH cursor4 INTO :transactionNames[j++];
     }
@@ -91,27 +138,7 @@ void UnlockAll(int dialogId)
     for (int i = 0; i < transactionsCount; i++)
     {
         Unlock(transactionNames[i]);
+        free(transactionNames[i]);
     }
-}
-
-
-void CreateLocksTrigger()
-{
-    EXEC SQL DROP FUNCTION IF EXISTS clear_old_locks CASCADE;
-    EXEC SQL CREATE OR REPLACE FUNCTION clear_old_locks() RETURNS trigger AS
-    $$
-    BEGIN
-        DELETE FROM locks WHERE isLocked = false;
-        RETURN NULL;
-    END;
-    $$ LANGUAGE plpgsql;
-
-
-    EXEC SQL CREATE TRIGGER clear_old_locks
-        BEFORE INSERT
-        ON locks
-        FOR STATEMENT
-    EXECUTE PROCEDURE clear_old_locks();
-
-    EXEC SQL COMMIT;
+    free(transactionNames);
 }

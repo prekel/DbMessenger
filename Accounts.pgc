@@ -1,5 +1,32 @@
 #include "Accounts.h"
 
+EXEC SQL WHENEVER SQLWARNING SQLPRINT;
+EXEC SQL WHENEVER SQLERROR SQLPRINT;
+EXEC SQL WHENEVER NOT FOUND CONTINUE;
+
+void CreateAccountsTable()
+{
+    EXEC SQL CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
+    EXEC SQL CREATE TABLE Accounts
+    (
+        AccountId            serial      PRIMARY KEY,
+        Nickname             varchar(20) NOT NULL UNIQUE,
+        RegistrationDateTime timestamp   NOT NULL DEFAULT current_timestamp,
+        LoginDateTime        timestamp,
+        PasswordHash         char(34)    NOT NULL
+    );
+
+    EXEC SQL COMMIT;
+}
+
+void DropAccountsTable()
+{
+    EXEC SQL DROP TABLE IF EXISTS Accounts CASCADE;
+
+    EXEC SQL COMMIT;
+}
+
 void Register(char* login, char* password)
 {
     EXEC SQL BEGIN DECLARE SECTION;

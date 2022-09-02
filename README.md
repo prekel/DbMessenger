@@ -1,6 +1,15 @@
 # DbMessenger
 
-## Сборка и запуск
+## Запуск через Compose
+
+```sh
+# Запуск базы и сборка клиента
+docker compose up client -d
+# Запуск клиента
+docker compose exec client ./DbMessenger
+```
+
+## Сборка и запуск (legacy)
 
 ```shell script
 make

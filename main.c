@@ -11,23 +11,13 @@
 #include "Messages.h"
 #include "Locks.h"
 
-#ifdef VPN_DEFAULTS
-#define DEFAULT_ADDRESS "192.168.66.1"
-#define DEFAULT_PORT "5432"
-#define DEFAULT_DBNAME "demo"
-#define DEFAULT_DBUSER "postgres"
-#define DEFAULT_DBPASSWORD "zasxcd123"
-#define DEFAULT_USER "User1"
-#define DEFAULT_PASSWORD "qwerty"
-#else
-#define DEFAULT_ADDRESS "localhost"
+#define DEFAULT_ADDRESS "db"
 #define DEFAULT_PORT "5432"
 #define DEFAULT_DBNAME "demo"
 #define DEFAULT_DBUSER "postgres"
 #define DEFAULT_DBPASSWORD "qwerty123"
 #define DEFAULT_USER "User1"
 #define DEFAULT_PASSWORD "qwerty"
-#endif
 
 int main(int argc, char** argv)
 {
